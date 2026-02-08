@@ -1,6 +1,7 @@
 idf_component_register(
     SRCS
         "main.c"
+        "config.c"
         "motion.c"
         "comms.c"
         "safety.c"
