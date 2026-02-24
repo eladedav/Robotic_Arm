@@ -65,15 +65,33 @@ static void motion_task(void *arg)
     (void)arg;
     ESP_LOGI(TAG, "Motion task started");
 
-    while (1) {
-        // In this minimal version we advance each axis at most 1 step per cycle.
-        // This keeps things simple but limits speed to roughly:
-        //   max_steps_per_sec ≈ 1000 / MOTION_TASK_PERIOD_MS
-        for (uint8_t i = 0; i < CONFIG_AXES; i++) {
-            motion_step_once(i);
+    for (;;) {
+
+        // --------- Option B: sleep when idle ----------
+        // If nothing is moving, block here until someone notifies us (new target/stop/etc.)
+        if (!motion_is_any_moving()) {
+            // Clear any pending notifications then block
+            (void) ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
         }
 
-        vTaskDelay(pdMS_TO_TICKS(MOTION_TASK_PERIOD_MS));
+        // --------- Option A: deterministic loop while moving ----------
+        TickType_t last_wake = xTaskGetTickCount();
+
+        while (motion_is_any_moving()) {
+
+            // One step max per axis per cycle (your current simple stepping model)
+            for (uint8_t i = 0; i < CONFIG_AXES; i++) {
+                motion_step_once(i);
+            }
+
+            // Fixed-rate pacing (use DelayUntil to reduce jitter)
+            vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(MOTION_TASK_PERIOD_MS));
+
+            // If multiple notifications came in while moving, consume them (non-blocking)
+            (void) ulTaskNotifyTake(pdTRUE, 0);
+        }
+
+        // Loop back; if idle, we'll block again.
     }
 }
 
@@ -99,7 +117,7 @@ void motion_start(void)
     }
 
     // High priority is typical for motion, but final value depends on your system
-    const UBaseType_t prio = 10;
+    const UBaseType_t prio = 5;
 
     xTaskCreatePinnedToCore(
         motion_task,
@@ -118,6 +136,7 @@ void motion_stop_all(void)
         s_axis[i].target_steps = s_axis[i].current_steps;
         s_axis[i].moving = false;
     }
+    if (s_motion_task_handle != NULL) xTaskNotifyGive(s_motion_task_handle);
 }
 
 void motion_stop_axis(uint8_t axis)
@@ -130,7 +149,13 @@ void motion_stop_axis(uint8_t axis)
 bool motion_set_target_steps(uint8_t axis, int32_t target_steps)
 {
     if (!axis_valid(axis)) return false;
+
     s_axis[axis].target_steps = target_steps;
+
+    // Wake motion task if it exists (so it can start moving immediately)
+    if (s_motion_task_handle != NULL) {
+        xTaskNotifyGive(s_motion_task_handle);
+    }
     return true;
 }
 

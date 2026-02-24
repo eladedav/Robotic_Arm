@@ -6,22 +6,22 @@ cmake_minimum_required(VERSION 3.5)
 # If CMAKE_DISABLE_SOURCE_CHANGES is set to true and the source directory is an
 # existing directory in our source tree, calling file(MAKE_DIRECTORY) on it
 # would cause a fatal error, even though it would be a no-op.
-if(NOT EXISTS "C:/Espressif/frameworks/esp-idf-v5.4/components/bootloader/subproject")
-  file(MAKE_DIRECTORY "C:/Espressif/frameworks/esp-idf-v5.4/components/bootloader/subproject")
+if(NOT EXISTS "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/bootloader/subproject")
+  file(MAKE_DIRECTORY "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/bootloader/subproject")
 endif()
 file(MAKE_DIRECTORY
-  "C:/Users/Elad Avraham/Robotic_Arm/build/bootloader"
-  "C:/Users/Elad Avraham/Robotic_Arm/build/bootloader-prefix"
-  "C:/Users/Elad Avraham/Robotic_Arm/build/bootloader-prefix/tmp"
-  "C:/Users/Elad Avraham/Robotic_Arm/build/bootloader-prefix/src/bootloader-stamp"
-  "C:/Users/Elad Avraham/Robotic_Arm/build/bootloader-prefix/src"
-  "C:/Users/Elad Avraham/Robotic_Arm/build/bootloader-prefix/src/bootloader-stamp"
+  "C:/Users/elade/Robotic_Arm/build/bootloader"
+  "C:/Users/elade/Robotic_Arm/build/bootloader-prefix"
+  "C:/Users/elade/Robotic_Arm/build/bootloader-prefix/tmp"
+  "C:/Users/elade/Robotic_Arm/build/bootloader-prefix/src/bootloader-stamp"
+  "C:/Users/elade/Robotic_Arm/build/bootloader-prefix/src"
+  "C:/Users/elade/Robotic_Arm/build/bootloader-prefix/src/bootloader-stamp"
 )
 
 set(configSubDirs )
 foreach(subDir IN LISTS configSubDirs)
-    file(MAKE_DIRECTORY "C:/Users/Elad Avraham/Robotic_Arm/build/bootloader-prefix/src/bootloader-stamp/${subDir}")
+    file(MAKE_DIRECTORY "C:/Users/elade/Robotic_Arm/build/bootloader-prefix/src/bootloader-stamp/${subDir}")
 endforeach()
 if(cfgdir)
-  file(MAKE_DIRECTORY "C:/Users/Elad Avraham/Robotic_Arm/build/bootloader-prefix/src/bootloader-stamp${cfgdir}") # cfgdir has leading slash
+  file(MAKE_DIRECTORY "C:/Users/elade/Robotic_Arm/build/bootloader-prefix/src/bootloader-stamp${cfgdir}") # cfgdir has leading slash
 endif()

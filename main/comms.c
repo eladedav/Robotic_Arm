@@ -20,15 +20,17 @@
 #include "safety.h"
 #include "hal_gpio.h"
 
+#include "esp_timer.h"
+
 static const char *TAG = "comms";
 
 // -------------------- Wi-Fi config (edit these) --------------------
 #ifndef WIFI_SSID
-#define WIFI_SSID "YOUR_WIFI_SSID"
+#define WIFI_SSID "elad"
 #endif
 
 #ifndef WIFI_PASS
-#define WIFI_PASS "YOUR_WIFI_PASSWORD"
+#define WIFI_PASS "0544850205av"
 #endif
 // ------------------------------------------------------------------
 
@@ -220,6 +222,32 @@ static esp_err_t state_handler(httpd_req_t *req)
     return send_json(req, buf);
 }
 
+// GET /uptime
+static esp_err_t uptime_handler(httpd_req_t *req)
+{
+    // microseconds since boot
+    int64_t us = esp_timer_get_time();
+
+    uint64_t ms  = (uint64_t)(us / 1000);
+    uint64_t sec = ms / 1000;
+    uint64_t min = sec / 60;
+    uint64_t hr  = min / 60;
+    uint64_t day = hr  / 24;
+
+    char buf[128];
+
+    snprintf(buf, sizeof(buf),
+             "{\"uptime_ms\":%llu,\"uptime_s\":%llu,"
+             "\"d\":%llu,\"h\":%llu,\"m\":%llu,\"s\":%llu}",
+             (unsigned long long)ms,
+             (unsigned long long)sec,
+             (unsigned long long)day,
+             (unsigned long long)(hr  % 24),
+             (unsigned long long)(min % 60),
+             (unsigned long long)(sec % 60));
+
+    return send_json(req, buf);
+}
 // -------------------- HTTP server start --------------------
 
 static void http_server_start(void)
@@ -257,13 +285,20 @@ static void http_server_start(void)
         .handler  = state_handler,
         .user_ctx = NULL
     };
-
+    httpd_uri_t uri_uptime = {
+        .uri      = "/uptime",
+        .method   = HTTP_GET,
+        .handler  = uptime_handler,
+        .user_ctx = NULL
+    };
+    
     ESP_ERROR_CHECK(httpd_register_uri_handler(s_http, &uri_cmd));
     ESP_ERROR_CHECK(httpd_register_uri_handler(s_http, &uri_stop));
     ESP_ERROR_CHECK(httpd_register_uri_handler(s_http, &uri_estop));
     ESP_ERROR_CHECK(httpd_register_uri_handler(s_http, &uri_state));
+    ESP_ERROR_CHECK(httpd_register_uri_handler(s_http, &uri_uptime));
 
-    ESP_LOGI(TAG, "HTTP server started: /cmd /stop /estop /state");
+    ESP_LOGI(TAG, "HTTP server started: /cmd /stop /estop /state /uptime");
 }
 
 // -------------------- Public API --------------------
