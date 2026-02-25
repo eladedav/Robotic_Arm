@@ -24,16 +24,6 @@
 
 static const char *TAG = "comms";
 
-// -------------------- Wi-Fi config (edit these) --------------------
-#ifndef WIFI_SSID
-#define WIFI_SSID "elad"
-#endif
-
-#ifndef WIFI_PASS
-#define WIFI_PASS "0544850205av"
-#endif
-// ------------------------------------------------------------------
-
 static httpd_handle_t s_http = NULL;
 static EventGroupHandle_t s_wifi_event_group = NULL;
 
@@ -89,16 +79,25 @@ static void wifi_init_sta(void)
     ESP_ERROR_CHECK(esp_event_handler_instance_register(
         IP_EVENT, IP_EVENT_STA_GOT_IP, &wifi_event_handler, NULL, NULL));
 
-    wifi_config_t wifi_config = {0};
-    strncpy((char*)wifi_config.sta.ssid, WIFI_SSID, sizeof(wifi_config.sta.ssid));
-    strncpy((char*)wifi_config.sta.password, WIFI_PASS, sizeof(wifi_config.sta.password));
+wifi_config_t wifi_config = {0};
+
+snprintf((char*)wifi_config.sta.ssid,
+         sizeof(wifi_config.sta.ssid),
+         "%s",
+         CONFIG_ROBOT_WIFI_SSID);
+
+snprintf((char*)wifi_config.sta.password,
+         sizeof(wifi_config.sta.password),
+         "%s",
+         CONFIG_ROBOT_WIFI_PASSWORD);
+
     wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
 
-    ESP_LOGI(TAG, "Wi-Fi STA start: SSID=%s", WIFI_SSID);
+    ESP_LOGI(TAG, "Wi-Fi STA start: SSID=%s", CONFIG_ROBOT_WIFI_SSID);
 
     EventBits_t bits = xEventGroupWaitBits(
         s_wifi_event_group,
