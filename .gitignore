@@ -1,0 +1,22 @@
+# ===============================
+# ESP-IDF / CMake build output
+# ===============================
+build/
+**/build/
+
+# ===============================
+# VSCode machine-specific config
+# ===============================
+.vscode/
+
+# ===============================
+# ESP-IDF managed components
+# ===============================
+managed_components/
+
+# Optional (recommended)
+dependencies.lock
+
+# Python cache
+__pycache__/
+*.pyc
