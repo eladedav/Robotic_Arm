@@ -3,6 +3,9 @@
 
 #include "config.h"
 #include "hal_gpio.h"
+#include "pulse_gen.h"
+
+#include <math.h>
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -13,9 +16,12 @@ static const char *TAG = "motion";
 // -------------------- Internal state --------------------
 
 typedef struct {
-    int32_t current_steps;
-    int32_t target_steps;
-    bool    moving;
+    int32_t     current_steps;
+    int32_t     target_steps;
+    bool        moving;
+    int8_t      dir_sign;         // +1 or -1 when moving
+    uint32_t    step_hz;          // requested pulse frequency to pulse_gen
+    uint32_t    pulse_snapshot;   // last observed pulse counter
 } axis_motion_t;
 
 static axis_motion_t s_axis[CONFIG_AXES];
@@ -29,36 +35,84 @@ static TaskHandle_t s_motion_task_handle = NULL;
 #define MOTION_TASK_PERIOD_MS 1
 #endif
 
+// Crawl speed in terms of step interval (legacy behavior).
+#ifndef MOTION_CRAWL_STEP_PERIOD_MS
+#define MOTION_CRAWL_STEP_PERIOD_MS 250
+#endif
+
 static inline bool axis_valid(uint8_t axis) {
     return axis < CONFIG_AXES;
 }
 
-// -------------------- Core stepping primitive --------------------
-// Very simple: if target != current, do one step toward target.
-// Direction is set each time; later you can optimize by caching dir.
-static void motion_step_once(uint8_t axis)
+static inline TickType_t motion_ms_to_ticks_min1(uint32_t ms)
 {
-    axis_motion_t *m = &s_axis[axis];
-
-    int32_t err = m->target_steps - m->current_steps;
-    if (err == 0) {
-        m->moving = false;
-        return;
-    }
-
-    // Decide direction
-    bool dir = (err > 0);
-    hal_gpio_set_dir(axis, dir);
-
-    // Issue one step pulse
-    hal_gpio_step_pulse(axis);
-
-    // Update position estimate
-    m->current_steps += (dir ? 1 : -1);
-    m->moving = true;
+    TickType_t t = pdMS_TO_TICKS(ms);
+    return (t > 0U) ? t : 1U;
 }
 
-// -------------------- Motion task --------------------
+static inline bool reached_target(const axis_motion_t *m)
+{
+    return m->dir_sign > 0 ? (m->current_steps >= m->target_steps)
+                           : (m->current_steps <= m->target_steps);
+}
+
+static uint32_t rpm_to_step_hz(const axis_config_t *a, float rpm)
+{
+    if (!(rpm > 0.0f) || !a || !(a->steps_per_output_rev > 0.0f)) {
+        return 0U;
+    }
+
+    float sps = (rpm * a->steps_per_output_rev) / 60.0f;
+    if (!(sps > 0.0f)) {
+        return 0U;
+    }
+
+    if (a->max_speed_sps > 0.0f && sps > a->max_speed_sps) {
+        sps = a->max_speed_sps;
+    }
+
+    uint32_t hz = (uint32_t)lrintf(sps);
+    return (hz > 0U) ? hz : 1U;
+}
+
+static bool start_axis_move(uint8_t axis, int32_t target_steps, float rpm)
+{
+    if (!axis_valid(axis) || !config_is_valid()) {
+        return false;
+    }
+
+    axis_motion_t *m = &s_axis[axis];
+    const axis_config_t *a = config_axis(axis);
+    if (!a) {
+        return false;
+    }
+
+    int32_t delta = target_steps - m->current_steps;
+    if (delta == 0) {
+        (void)pulse_gen_stop(axis);
+        m->target_steps = m->current_steps;
+        m->moving = false;
+        m->step_hz = 0;
+        return true;
+    }
+
+    uint32_t hz = rpm_to_step_hz(a, rpm);
+    if (hz == 0U) {
+        return false;
+    }
+
+    m->target_steps = target_steps;
+    m->dir_sign = (delta > 0) ? 1 : -1;
+    m->step_hz = hz;
+    m->pulse_snapshot = pulse_gen_get_pulse_count(axis);
+
+    hal_gpio_set_dir(axis, m->dir_sign > 0);
+    if (pulse_gen_start(axis, hz) != ESP_OK) {
+        return false;
+    }
+    m->moving = true;
+    return true;
+}
 
 static void motion_task(void *arg)
 {
@@ -66,32 +120,37 @@ static void motion_task(void *arg)
     ESP_LOGI(TAG, "Motion task started");
 
     for (;;) {
-
-        // --------- Option B: sleep when idle ----------
-        // If nothing is moving, block here until someone notifies us (new target/stop/etc.)
         if (!motion_is_any_moving()) {
-            // Clear any pending notifications then block
             (void) ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
         }
 
-        // --------- Option A: deterministic loop while moving ----------
         TickType_t last_wake = xTaskGetTickCount();
-
         while (motion_is_any_moving()) {
-
-            // One step max per axis per cycle (your current simple stepping model)
             for (uint8_t i = 0; i < CONFIG_AXES; i++) {
-                motion_step_once(i);
+                axis_motion_t *m = &s_axis[i];
+                if (!m->moving) {
+                    continue;
+                }
+
+                uint32_t now_count = pulse_gen_get_pulse_count(i);
+                uint32_t dcount = now_count - m->pulse_snapshot;
+                if (dcount > 0U) {
+                    m->pulse_snapshot = now_count;
+                    int64_t next = (int64_t)m->current_steps + (int64_t)m->dir_sign * (int64_t)dcount;
+                    m->current_steps = (int32_t)next;
+                }
+
+                if (reached_target(m)) {
+                    m->current_steps = m->target_steps;
+                    (void)pulse_gen_stop(i);
+                    m->moving = false;
+                    m->step_hz = 0;
+                }
             }
 
-            // Fixed-rate pacing (use DelayUntil to reduce jitter)
-            vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(MOTION_TASK_PERIOD_MS));
-
-            // If multiple notifications came in while moving, consume them (non-blocking)
+            vTaskDelayUntil(&last_wake, motion_ms_to_ticks_min1(MOTION_TASK_PERIOD_MS));
             (void) ulTaskNotifyTake(pdTRUE, 0);
         }
-
-        // Loop back; if idle, we'll block again.
     }
 }
 
@@ -101,9 +160,12 @@ void motion_init(void)
 {
     // Initialize state; keep positions at 0 until homing is implemented.
     for (uint8_t i = 0; i < CONFIG_AXES; i++) {
-        s_axis[i].current_steps = 0;
-        s_axis[i].target_steps  = 0;
-        s_axis[i].moving        = false;
+        s_axis[i].current_steps   = 0;
+        s_axis[i].target_steps    = 0;
+        s_axis[i].moving          = false;
+        s_axis[i].dir_sign        = 1;
+        s_axis[i].step_hz         = 0;
+        s_axis[i].pulse_snapshot  = 0;
     }
 
     ESP_LOGI(TAG, "Motion initialized");
@@ -133,8 +195,10 @@ void motion_start(void)
 void motion_stop_all(void)
 {
     for (uint8_t i = 0; i < CONFIG_AXES; i++) {
-        s_axis[i].target_steps = s_axis[i].current_steps;
-        s_axis[i].moving = false;
+        (void)pulse_gen_stop(i);
+        s_axis[i].target_steps   = s_axis[i].current_steps;
+        s_axis[i].moving         = false;
+        s_axis[i].step_hz        = 0;
     }
     if (s_motion_task_handle != NULL) xTaskNotifyGive(s_motion_task_handle);
 }
@@ -142,17 +206,31 @@ void motion_stop_all(void)
 void motion_stop_axis(uint8_t axis)
 {
     if (!axis_valid(axis)) return;
-    s_axis[axis].target_steps = s_axis[axis].current_steps;
-    s_axis[axis].moving = false;
+    (void)pulse_gen_stop(axis);
+    s_axis[axis].target_steps   = s_axis[axis].current_steps;
+    s_axis[axis].moving         = false;
+    s_axis[axis].step_hz        = 0;
 }
 
 bool motion_set_target_steps(uint8_t axis, int32_t target_steps)
 {
+    return motion_set_target_steps_rpm(axis, target_steps, 2.0f);
+}
+
+bool motion_set_target_steps_rpm(uint8_t axis, int32_t target_steps, float rpm)
+{
     if (!axis_valid(axis)) return false;
 
-    s_axis[axis].target_steps = target_steps;
+    int32_t cur = s_axis[axis].current_steps;
+    if (!start_axis_move(axis, target_steps, rpm)) {
+        return false;
+    }
 
-    // Wake motion task if it exists (so it can start moving immediately)
+    if (target_steps != cur) {
+        ESP_LOGI(TAG, "move start axis %u -> %ld steps (from %ld) @ %.2f rpm, %lu Hz",
+                 (unsigned)axis, (long)target_steps, (long)cur, rpm, (unsigned long)s_axis[axis].step_hz);
+    }
+
     if (s_motion_task_handle != NULL) {
         xTaskNotifyGive(s_motion_task_handle);
     }
@@ -168,11 +246,101 @@ int32_t motion_get_position_steps(uint8_t axis)
 bool motion_set_position_steps(uint8_t axis, int32_t pos_steps)
 {
     if (!axis_valid(axis)) return false;
-    s_axis[axis].current_steps = pos_steps;
-    // Keep target aligned to prevent sudden jump
-    s_axis[axis].target_steps  = pos_steps;
-    s_axis[axis].moving        = false;
+    (void)pulse_gen_stop(axis);
+    s_axis[axis].current_steps   = pos_steps;
+    s_axis[axis].target_steps    = pos_steps;
+    s_axis[axis].moving          = false;
+    s_axis[axis].step_hz         = 0;
+    s_axis[axis].pulse_snapshot  = pulse_gen_get_pulse_count(axis);
     return true;
+}
+
+static bool move_relative_degrees_rpm(uint8_t axis, char dir, float degrees, float rpm, bool clamp_limits)
+{
+    if (!axis_valid(axis) || !(degrees > 0.0f) || !(rpm > 0.0f) || !config_is_valid()) {
+        return false;
+    }
+
+    char d = dir;
+    if (d >= 'a' && d <= 'z') {
+        d = (char)(d - 'a' + 'A');
+    }
+
+    int sign = 0;
+    if (d == 'R') {
+        sign = 1;
+    } else if (d == 'L') {
+        sign = -1;
+    } else {
+        return false;
+    }
+
+    const axis_config_t *a = config_axis(axis);
+    if (!a) {
+        return false;
+    }
+
+    int32_t delta = (int32_t)lrintf((float)sign * degrees * a->steps_per_deg);
+    if (delta == 0) {
+        return true;
+    }
+
+    int64_t new_target = (int64_t)s_axis[axis].current_steps + (int64_t)delta;
+
+    int32_t target;
+    if (clamp_limits) {
+        int32_t lo = config_angle_deg_to_steps(axis, a->min_angle_deg);
+        int32_t hi = config_angle_deg_to_steps(axis, a->max_angle_deg);
+        if (lo > hi) {
+            int32_t t = lo;
+            lo = hi;
+            hi = t;
+        }
+
+        if (new_target < lo) {
+            target = lo;
+        } else if (new_target > hi) {
+            target = hi;
+        } else {
+            target = (int32_t)new_target;
+        }
+    } else {
+        target = (int32_t)new_target;
+    }
+
+    if (target == s_axis[axis].current_steps) {
+        return true;
+    }
+
+    int32_t cur = s_axis[axis].current_steps;
+    if (!start_axis_move(axis, target, rpm)) {
+        return false;
+    }
+
+    ESP_LOGI(TAG, "move start j%u %c %.2f deg -> %ld steps (from %ld) @ %.2f rpm, %lu Hz",
+             (unsigned)axis, d, degrees, (long)target, (long)cur, rpm, (unsigned long)s_axis[axis].step_hz);
+
+    if (s_motion_task_handle != NULL) {
+        xTaskNotifyGive(s_motion_task_handle);
+    }
+    return true;
+}
+
+bool motion_crawl_degrees(uint8_t axis, char dir, float degrees)
+{
+    const axis_config_t *a = config_axis(axis);
+    if (!a || !(a->steps_per_output_rev > 0.0f)) {
+        return false;
+    }
+    float crawl_sps = 1000.0f / (float)MOTION_CRAWL_STEP_PERIOD_MS;
+    float crawl_rpm = (crawl_sps * 60.0f) / a->steps_per_output_rev;
+    return move_relative_degrees_rpm(axis, dir, degrees, crawl_rpm, true);
+}
+
+bool motion_rotate_degrees(uint8_t axis, char dir, float degrees, float rpm)
+{
+    // rotate is intended for multi-turn moves; do not clamp to soft angle limits.
+    return move_relative_degrees_rpm(axis, dir, degrees, rpm, false);
 }
 
 bool motion_is_any_moving(void)

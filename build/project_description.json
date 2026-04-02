@@ -1,12 +1,12 @@
 {
     "version":            "1.2",
     "project_name":       "Robotic_Arm",
-    "project_version":    "fe9f901-dirty",
+    "project_version":    "422037f-dirty",
     "project_path":       "C:/Users/elade/Robotic_Arm",
     "idf_path":           "C:/Users/elade/esp/v5.5-rc1/esp-idf",
     "build_dir":          "C:/Users/elade/Robotic_Arm/build",
     "config_file":        "C:/Users/elade/Robotic_Arm/sdkconfig",
-    "config_defaults":    "C:/Users/elade/Robotic_Arm/sdkconfig.defaults",
+    "config_defaults":    "",
     "bootloader_elf":     "C:/Users/elade/Robotic_Arm/build/bootloader/bootloader.elf",
     "app_elf":            "Robotic_Arm.elf",
     "app_bin":            "Robotic_Arm.bin",
@@ -21,12 +21,12 @@
     "monitor_toolprefix": "xtensa-esp32-elf-",
     "c_compiler":         "C:/Espressif/tools/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/xtensa-esp32-elf-gcc.exe",
     "config_environment" : {
-        "COMPONENT_KCONFIGS" : "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/efuse/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_coex/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_common/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_bitscrambler/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_gpio/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_rmt/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_spi/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_uart/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_usb_serial_jtag/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_event/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_http_server/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_hw_support/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_mm/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_netif/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_partition/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_phy/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_pm/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_ringbuf/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_rom/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_security/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_system/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_timer/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_wifi/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/freertos/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/hal/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/heap/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/log/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/lwip/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/mbedtls/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/newlib/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/nvs_flash/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/pthread/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/soc/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/spi_flash/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/vfs/Kconfig",
-        "COMPONENT_KCONFIGS_PROJBUILD" : "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/bootloader/Kconfig.projbuild;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_app_format/Kconfig.projbuild;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_rom/Kconfig.projbuild;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esptool_py/Kconfig.projbuild;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/partition_table/Kconfig.projbuild;C:/Users/elade/Robotic_Arm/main/Kconfig.projbuild"
+        "COMPONENT_KCONFIGS" : "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/efuse/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_coex/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_common/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_gpio/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_gptimer/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_uart/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_usb_serial_jtag/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_event/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_http_server/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_hw_support/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_mm/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_netif/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_partition/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_phy/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_pm/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_ringbuf/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_rom/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_security/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_system/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_timer/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_wifi/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/freertos/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/hal/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/heap/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/log/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/lwip/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/mbedtls/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/newlib/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/nvs_flash/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/pthread/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/soc/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/spi_flash/Kconfig;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/vfs/Kconfig",
+        "COMPONENT_KCONFIGS_PROJBUILD" : "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/bootloader/Kconfig.projbuild;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_app_format/Kconfig.projbuild;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_rom/Kconfig.projbuild;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esptool_py/Kconfig.projbuild;C:/Users/elade/esp/v5.5-rc1/esp-idf/components/partition_table/Kconfig.projbuild"
     },
     "common_component_reqs": [ "cxx", "newlib", "freertos", "esp_hw_support", "heap", "log", "soc", "hal", "esp_rom", "esp_common", "esp_system", "xtensa" ],
-    "build_components" : [ "app_update", "bootloader", "bootloader_support", "cxx", "efuse", "esp_app_format", "esp_bootloader_format", "esp_coex", "esp_common", "esp_driver_bitscrambler", "esp_driver_gpio", "esp_driver_rmt", "esp_driver_spi", "esp_driver_uart", "esp_driver_usb_serial_jtag", "esp_event", "esp_http_server", "esp_hw_support", "esp_mm", "esp_netif", "esp_netif_stack", "esp_partition", "esp_phy", "esp_pm", "esp_ringbuf", "esp_rom", "esp_security", "esp_system", "esp_timer", "esp_vfs_console", "esp_wifi", "espressif__led_strip", "esptool_py", "freertos", "hal", "heap", "http_parser", "log", "lwip", "main", "mbedtls", "newlib", "nvs_flash", "partition_table", "pthread", "soc", "spi_flash", "vfs", "wpa_supplicant", "xtensa", "" ],
-    "build_component_paths" : [ "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/app_update", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/bootloader", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/bootloader_support", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/cxx", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/efuse", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_app_format", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_bootloader_format", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_coex", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_common", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_bitscrambler", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_gpio", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_rmt", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_spi", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_uart", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_usb_serial_jtag", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_event", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_http_server", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_hw_support", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_mm", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_netif", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_netif_stack", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_partition", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_phy", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_pm", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_ringbuf", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_rom", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_security", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_system", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_timer", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_vfs_console", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_wifi", "C:/Users/elade/Robotic_Arm/managed_components/espressif__led_strip", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esptool_py", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/freertos", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/hal", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/heap", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/http_parser", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/log", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/lwip", "C:/Users/elade/Robotic_Arm/main", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/mbedtls", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/newlib", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/nvs_flash", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/partition_table", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/pthread", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/soc", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/spi_flash", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/vfs", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/wpa_supplicant", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/xtensa", "" ],
+    "build_components" : [ "app_update", "bootloader", "bootloader_support", "cxx", "efuse", "esp_app_format", "esp_bootloader_format", "esp_coex", "esp_common", "esp_driver_gpio", "esp_driver_gptimer", "esp_driver_uart", "esp_driver_usb_serial_jtag", "esp_event", "esp_http_server", "esp_hw_support", "esp_mm", "esp_netif", "esp_netif_stack", "esp_partition", "esp_phy", "esp_pm", "esp_ringbuf", "esp_rom", "esp_security", "esp_system", "esp_timer", "esp_vfs_console", "esp_wifi", "esptool_py", "freertos", "hal", "heap", "http_parser", "log", "lwip", "main", "mbedtls", "newlib", "nvs_flash", "partition_table", "pthread", "soc", "spi_flash", "vfs", "wpa_supplicant", "xtensa", "" ],
+    "build_component_paths" : [ "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/app_update", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/bootloader", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/bootloader_support", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/cxx", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/efuse", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_app_format", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_bootloader_format", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_coex", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_common", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_gpio", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_gptimer", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_uart", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_usb_serial_jtag", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_event", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_http_server", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_hw_support", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_mm", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_netif", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_netif_stack", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_partition", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_phy", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_pm", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_ringbuf", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_rom", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_security", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_system", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_timer", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_vfs_console", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_wifi", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esptool_py", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/freertos", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/hal", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/heap", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/http_parser", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/log", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/lwip", "C:/Users/elade/Robotic_Arm/main", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/mbedtls", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/newlib", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/nvs_flash", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/partition_table", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/pthread", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/soc", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/spi_flash", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/vfs", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/wpa_supplicant", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/xtensa", "" ],
     "build_component_info" : {
         "app_update": {
             "alias": "idf::app_update",
@@ -163,21 +163,6 @@
             "sources": [ "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_common/src/esp_err_to_name.c" ],
             "include_dirs": [ "include" ]
         },
-        "esp_driver_bitscrambler": {
-            "alias": "idf::esp_driver_bitscrambler",
-            "target": "___idf_esp_driver_bitscrambler",
-            "prefix": "idf",
-            "dir": "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_bitscrambler",
-            "type": "CONFIG_ONLY",
-            "lib": "__idf_esp_driver_bitscrambler",
-            "reqs": [],
-            "priv_reqs": [ "esp_mm" ],
-            "managed_reqs": [],
-            "managed_priv_reqs": [],
-            "file": "",
-            "sources": [],
-            "include_dirs": [ "include" ]
-        },
         "esp_driver_gpio": {
             "alias": "idf::esp_driver_gpio",
             "target": "___idf_esp_driver_gpio",
@@ -193,34 +178,19 @@
             "sources": [ "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_gpio/src/gpio.c", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_gpio/src/gpio_glitch_filter_ops.c", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_gpio/src/rtc_io.c" ],
             "include_dirs": [ "include" ]
         },
-        "esp_driver_rmt": {
-            "alias": "idf::esp_driver_rmt",
-            "target": "___idf_esp_driver_rmt",
+        "esp_driver_gptimer": {
+            "alias": "idf::esp_driver_gptimer",
+            "target": "___idf_esp_driver_gptimer",
             "prefix": "idf",
-            "dir": "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_rmt",
+            "dir": "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_gptimer",
             "type": "LIBRARY",
-            "lib": "__idf_esp_driver_rmt",
-            "reqs": [],
-            "priv_reqs": [ "esp_pm", "esp_driver_gpio", "esp_driver_bitscrambler", "esp_mm" ],
-            "managed_reqs": [],
-            "managed_priv_reqs": [],
-            "file": "C:/Users/elade/Robotic_Arm/build/esp-idf/esp_driver_rmt/libesp_driver_rmt.a",
-            "sources": [ "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_rmt/src/rmt_common.c", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_rmt/src/rmt_encoder.c", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_rmt/src/rmt_encoder_bytes.c", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_rmt/src/rmt_encoder_copy.c", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_rmt/src/rmt_encoder_simple.c", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_rmt/src/rmt_rx.c", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_rmt/src/rmt_tx.c" ],
-            "include_dirs": [ "include" ]
-        },
-        "esp_driver_spi": {
-            "alias": "idf::esp_driver_spi",
-            "target": "___idf_esp_driver_spi",
-            "prefix": "idf",
-            "dir": "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_spi",
-            "type": "LIBRARY",
-            "lib": "__idf_esp_driver_spi",
+            "lib": "__idf_esp_driver_gptimer",
             "reqs": [ "esp_pm" ],
-            "priv_reqs": [ "esp_timer", "esp_mm", "esp_driver_gpio" ],
+            "priv_reqs": [],
             "managed_reqs": [],
             "managed_priv_reqs": [],
-            "file": "C:/Users/elade/Robotic_Arm/build/esp-idf/esp_driver_spi/libesp_driver_spi.a",
-            "sources": [ "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_spi/src/gpspi/spi_common.c", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_spi/src/gpspi/spi_master.c", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_spi/src/gpspi/spi_slave.c", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_spi/src/gpspi/spi_dma.c" ],
+            "file": "C:/Users/elade/Robotic_Arm/build/esp-idf/esp_driver_gptimer/libesp_driver_gptimer.a",
+            "sources": [ "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_gptimer/src/gptimer.c", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_driver_gptimer/src/gptimer_common.c" ],
             "include_dirs": [ "include" ]
         },
         "esp_driver_uart": {
@@ -493,21 +463,6 @@
             "sources": [ "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_wifi/src/lib_printf.c", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_wifi/src/mesh_event.c", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_wifi/src/smartconfig.c", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_wifi/src/wifi_init.c", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_wifi/src/wifi_default.c", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_wifi/src/wifi_netif.c", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_wifi/src/wifi_default_ap.c", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_wifi/esp32/esp_adapter.c", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_wifi/regulatory/esp_wifi_regulatory.c", "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_wifi/src/smartconfig_ack.c" ],
             "include_dirs": [ "include", "include/local", "wifi_apps/include", "wifi_apps/nan_app/include" ]
         },
-        "espressif__led_strip": {
-            "alias": "idf::espressif__led_strip",
-            "target": "___idf_espressif__led_strip",
-            "prefix": "idf",
-            "dir": "C:/Users/elade/Robotic_Arm/managed_components/espressif__led_strip",
-            "type": "LIBRARY",
-            "lib": "__idf_espressif__led_strip",
-            "reqs": [ "esp_driver_rmt", "esp_driver_spi" ],
-            "priv_reqs": [],
-            "managed_reqs": [],
-            "managed_priv_reqs": [],
-            "file": "C:/Users/elade/Robotic_Arm/build/esp-idf/espressif__led_strip/libespressif__led_strip.a",
-            "sources": [ "C:/Users/elade/Robotic_Arm/managed_components/espressif__led_strip/src/led_strip_api.c", "C:/Users/elade/Robotic_Arm/managed_components/espressif__led_strip/src/led_strip_rmt_dev.c", "C:/Users/elade/Robotic_Arm/managed_components/espressif__led_strip/src/led_strip_rmt_encoder.c", "C:/Users/elade/Robotic_Arm/managed_components/espressif__led_strip/src/led_strip_spi_dev.c" ],
-            "include_dirs": [ "include", "interface" ]
-        },
         "esptool_py": {
             "alias": "idf::esptool_py",
             "target": "___idf_esptool_py",
@@ -620,12 +575,12 @@
             "dir": "C:/Users/elade/Robotic_Arm/main",
             "type": "LIBRARY",
             "lib": "__idf_main",
-            "reqs": [ "nvs_flash", "esp_wifi", "esp_event", "esp_netif", "esp_http_server", "esp_driver_gpio", "esp_timer" ],
-            "priv_reqs": [ "espressif__led_strip" ],
+            "reqs": [ "nvs_flash", "esp_wifi", "esp_event", "esp_netif", "esp_http_server", "esp_driver_gpio", "esp_driver_gptimer", "esp_timer" ],
+            "priv_reqs": [],
             "managed_reqs": [],
-            "managed_priv_reqs": [ "espressif__led_strip" ],
+            "managed_priv_reqs": [],
             "file": "C:/Users/elade/Robotic_Arm/build/esp-idf/main/libmain.a",
-            "sources": [ "C:/Users/elade/Robotic_Arm/main/main.c", "C:/Users/elade/Robotic_Arm/main/config.c", "C:/Users/elade/Robotic_Arm/main/motion.c", "C:/Users/elade/Robotic_Arm/main/comms.c", "C:/Users/elade/Robotic_Arm/main/safety.c", "C:/Users/elade/Robotic_Arm/main/hal_gpio.c" ],
+            "sources": [ "C:/Users/elade/Robotic_Arm/main/main.c", "C:/Users/elade/Robotic_Arm/main/config.c", "C:/Users/elade/Robotic_Arm/main/motion.c", "C:/Users/elade/Robotic_Arm/main/pulse_gen.c", "C:/Users/elade/Robotic_Arm/main/comms.c", "C:/Users/elade/Robotic_Arm/main/safety.c", "C:/Users/elade/Robotic_Arm/main/hal_gpio.c" ],
             "include_dirs": [ "." ]
         },
         "mbedtls": {
@@ -2082,23 +2037,11 @@
             "prefix": "idf",
             "dir": "C:/Users/elade/Robotic_Arm/main",
             "lib": "__idf_main",
-            "reqs": [ "nvs_flash", "esp_wifi", "esp_event", "esp_netif", "esp_http_server", "esp_driver_gpio", "esp_timer" ],
-            "priv_reqs": [ "espressif__led_strip" ],
-            "managed_reqs": [],
-            "managed_priv_reqs": [ "espressif__led_strip" ],
-            "include_dirs": [ "." ]
-        },
-        "espressif__led_strip": {
-            "alias": "idf::espressif__led_strip",
-            "target": "___idf_espressif__led_strip",
-            "prefix": "idf",
-            "dir": "C:/Users/elade/Robotic_Arm/managed_components/espressif__led_strip",
-            "lib": "__idf_espressif__led_strip",
-            "reqs": [ "esp_driver_rmt", "esp_driver_spi" ],
+            "reqs": [ "nvs_flash", "esp_wifi", "esp_event", "esp_netif", "esp_http_server", "esp_driver_gpio", "esp_driver_gptimer", "esp_timer" ],
             "priv_reqs": [],
             "managed_reqs": [],
             "managed_priv_reqs": [],
-            "include_dirs": [ "include", "interface" ]
+            "include_dirs": [ "." ]
         }
     },
     "debug_prefix_map_gdbinit": "",

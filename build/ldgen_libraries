@@ -83,10 +83,6 @@ C:/Users/elade/Robotic_Arm/build/esp-idf/esp_coex/libesp_coex.a
 C:/Users/elade/Robotic_Arm/build/esp-idf/esp_wifi/libesp_wifi.a
 C:/Users/elade/Robotic_Arm/build/esp-idf/http_parser/libhttp_parser.a
 C:/Users/elade/Robotic_Arm/build/esp-idf/esp_http_server/libesp_http_server.a
-C:/Users/elade/Robotic_Arm/build/esp-idf/esp_driver_rmt/libesp_driver_rmt.a
-C:/Users/elade/Robotic_Arm/build/esp-idf/esp_driver_spi/libesp_driver_spi.a
-C:/Users/elade/Robotic_Arm/build/esp-idf/espressif__led_strip/libespressif__led_strip.a
-C:/Users/elade/Robotic_Arm/build/esp-idf/esp_driver_rmt/libesp_driver_rmt.a
-C:/Users/elade/Robotic_Arm/build/esp-idf/esp_driver_spi/libesp_driver_spi.a
+C:/Users/elade/Robotic_Arm/build/esp-idf/esp_driver_gptimer/libesp_driver_gptimer.a
 C:/Users/elade/Robotic_Arm/build/esp-idf/main/libmain.a
-C:/Users/elade/Robotic_Arm/build/esp-idf/espressif__led_strip/libespressif__led_strip.a
+C:/Users/elade/Robotic_Arm/build/esp-idf/esp_driver_gptimer/libesp_driver_gptimer.a

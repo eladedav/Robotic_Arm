@@ -1,0 +1,18 @@
+# ESP-IDF build output
+/build/
+
+# CMake/Ninja temporary outputs
+/.ninja_log
+/.ninja_deps
+/.bin_timestamp
+
+# Local sdkconfig backup
+/sdkconfig.old
+
+# Editor/OS local files
+/.idea/
+/.vscode/*.log
+*.swp
+*.swo
+Thumbs.db
+Desktop.ini

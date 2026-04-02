@@ -5,9 +5,12 @@
   "idf.openOcdConfigs": [
     "board/esp32-wrover-kit-3.3v.cfg"
   ],
-  "idf.portWin": "COM3",
+  "idf.portWin": "COM4",
   "idf.toolsPathWin": "C:\\Espressif",
   "idf.customExtraVars": {
+    "OPENOCD_SCRIPTS": "c:\\Espressif\\tools\\tools\\openocd-esp32\\v0.12.0-esp32-20240318/openocd-esp32/share/openocd/scripts",
+    "IDF_CCACHE_ENABLE": "1",
+    "ESP_ROM_ELF_DIR": "c:\\Espressif\\tools\\tools\\esp-rom-elfs\\20240305/",
     "IDF_TARGET": "esp32"
   },
   "clangd.path": "c:\\Espressif\\tools\\tools\\esp-clang\\esp-19.1.2_20250312\\esp-clang\\bin\\clangd.exe",

@@ -1,5 +1,6 @@
 // config.c
 #include "config.h"
+#include "board_pins.h"
 #include <math.h>
 #include "esp_log.h"
 
@@ -8,13 +9,13 @@ static const char *TAG = "config";
 static bool s_config_valid = false;
 
 // Read-only axis configuration table.
-// NOTE: Fill pins + parameters for your real hardware.
+// GPIOs: see board_pins.h
 const axis_config_t g_axis_cfg[CONFIG_AXES] = {
     // Axis 0
     {
-        .step_pin = GPIO_NUM_25,
-        .dir_pin  = GPIO_NUM_26,
-        .en_pin   = GPIO_NUM_27,
+        .step_pin = BOARD_AXIS0_STEP_GPIO,
+        .dir_pin  = BOARD_AXIS0_DIR_GPIO,
+        .en_pin   = BOARD_AXIS0_EN_GPIO,
         .en_polarity = EN_ACTIVE_LOW,
 
         .full_steps_per_rev = 200,
@@ -24,7 +25,7 @@ const axis_config_t g_axis_cfg[CONFIG_AXES] = {
         .min_angle_deg = -180.0f,
         .max_angle_deg =  180.0f,
 
-        .max_speed_sps  = 5000.0f,
+        .max_speed_sps  = 30000.0f,
         .max_accel_sps2 = 20000.0f,
 
         // derived will be computed in config_init()
@@ -34,19 +35,19 @@ const axis_config_t g_axis_cfg[CONFIG_AXES] = {
 
     // Axis 1
     {
-        .step_pin = GPIO_NUM_14,
-        .dir_pin  = GPIO_NUM_12,
-        .en_pin   = GPIO_NUM_13,
+        .step_pin = BOARD_AXIS1_STEP_GPIO,
+        .dir_pin  = BOARD_AXIS1_DIR_GPIO,
+        .en_pin   = BOARD_AXIS1_EN_GPIO,
         .en_polarity = EN_ACTIVE_LOW,
 
         .full_steps_per_rev = 200,
         .microsteps = 16,
-        .gear_ratio = 1.0f,
+        .gear_ratio = 5.0f,
 
         .min_angle_deg = -180.0f,
         .max_angle_deg =  180.0f,
 
-        .max_speed_sps  = 5000.0f,
+        .max_speed_sps  = 30000.0f,
         .max_accel_sps2 = 20000.0f,
 
         .steps_per_output_rev = 0.0f,
@@ -55,19 +56,19 @@ const axis_config_t g_axis_cfg[CONFIG_AXES] = {
 
     // Axis 2
     {
-        .step_pin = GPIO_NUM_33,
-        .dir_pin  = GPIO_NUM_32,
-        .en_pin   = GPIO_NUM_15,
+        .step_pin = BOARD_AXIS2_STEP_GPIO,
+        .dir_pin  = BOARD_AXIS2_DIR_GPIO,
+        .en_pin   = BOARD_AXIS2_EN_GPIO,
         .en_polarity = EN_ACTIVE_LOW,
 
         .full_steps_per_rev = 200,
         .microsteps = 16,
-        .gear_ratio = 1.0f,
+        .gear_ratio = 5.0f,
 
         .min_angle_deg = -180.0f,
         .max_angle_deg =  180.0f,
 
-        .max_speed_sps  = 5000.0f,
+        .max_speed_sps  = 30000.0f,
         .max_accel_sps2 = 20000.0f,
 
         .steps_per_output_rev = 0.0f,
@@ -76,19 +77,19 @@ const axis_config_t g_axis_cfg[CONFIG_AXES] = {
 
     // Axis 3
     {
-        .step_pin = GPIO_NUM_5,
-        .dir_pin  = GPIO_NUM_18,
-        .en_pin   = GPIO_NUM_19,
+        .step_pin = BOARD_AXIS3_STEP_GPIO,
+        .dir_pin  = BOARD_AXIS3_DIR_GPIO,
+        .en_pin   = BOARD_AXIS3_EN_GPIO,
         .en_polarity = EN_ACTIVE_LOW,
 
         .full_steps_per_rev = 200,
         .microsteps = 16,
-        .gear_ratio = 1.0f,
+        .gear_ratio = 5.0f,
 
         .min_angle_deg = -180.0f,
         .max_angle_deg =  180.0f,
 
-        .max_speed_sps  = 5000.0f,
+        .max_speed_sps  = 30000.0f,
         .max_accel_sps2 = 20000.0f,
 
         .steps_per_output_rev = 0.0f,

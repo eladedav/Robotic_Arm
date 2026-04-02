@@ -3,4 +3,3 @@ source "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_app_format/Kconfig.pr
 source "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esp_rom/Kconfig.projbuild"
 source "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/esptool_py/Kconfig.projbuild"
 source "C:/Users/elade/esp/v5.5-rc1/esp-idf/components/partition_table/Kconfig.projbuild"
-source "C:/Users/elade/Robotic_Arm/main/Kconfig.projbuild"
