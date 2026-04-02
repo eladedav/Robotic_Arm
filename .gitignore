@@ -1,17 +1,28 @@
-# ESP-IDF build output
+# ESP-IDF / CMake build output
 /build/
-
-# CMake/Ninja temporary outputs
+**/build/
 /.ninja_log
 /.ninja_deps
 /.bin_timestamp
 
-# Local sdkconfig backup
+# ESP-IDF generated config backup
 /sdkconfig.old
+
+# VSCode machine-specific config
+/.vscode/
+
+# ESP-IDF managed components
+/managed_components/
+
+# Optional lock/dependency artifacts
+/dependencies.lock
+
+# Python cache
+__pycache__/
+*.pyc
 
 # Editor/OS local files
 /.idea/
-/.vscode/*.log
 *.swp
 *.swo
 Thumbs.db

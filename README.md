@@ -1,5 +1,4 @@
- 
-  # Robotic Arm Firmware (ESP-IDF)
+# Robotic Arm Firmware (ESP-IDF)
 
 Firmware for a 4-axis stepper-based robotic arm running on ESP32 with FreeRTOS.
 
@@ -18,7 +17,7 @@ Firmware for a 4-axis stepper-based robotic arm running on ESP32 with FreeRTOS.
 - `main/main.c` - startup sequence and subsystem initialization
 - `main/config.*` - axis pin map, mechanics, limits, and conversion helpers
 - `main/hal_gpio.*` - low-level GPIO control for motor drivers
-- `mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm'in/motion.*` - target tracking and step generation loop
+- `main/motion.*` - target tracking and step generation loop
 - `main/safety.*` - state machine, fault handling, motion gating
 - `main/comms.*` - Wi-Fi and HTTP server endpoints
 
@@ -50,21 +49,7 @@ http://<device-ip>/rotate?joint=2&dir=L&deg=15&rpm=2.5
 idf.py set-target esp32
 ```
 
-2. Configur\
-
-
-
-
-
-
-
-
-
-
-
-
-
-: 
+2. Configure project options:
 
 ```bash
 idf.py menuconfig
