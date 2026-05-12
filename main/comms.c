@@ -1,9 +1,12 @@
 // comms.c
 #include "comms.h"
 
+#include <mdns.h>
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <ctype.h>
 
 #include "esp_log.h"
 #include "esp_err.h"
@@ -20,17 +23,30 @@
 #include "safety.h"
 #include "hal_gpio.h"
 
+#include "esp_timer.h"
+
 static const char *TAG = "comms";
 
-// -------------------- Wi-Fi config (edit these) --------------------
-#ifndef WIFI_SSID
-#define WIFI_SSID "YOUR_WIFI_SSID"
-#endif
+//-------------------- Helper functions --------------------
+static void mdns_start(void)
+{
+    static bool started = false;
+    if (started) return;
 
-#ifndef WIFI_PASS
-#define WIFI_PASS "YOUR_WIFI_PASSWORD"
-#endif
-// ------------------------------------------------------------------
+    ESP_ERROR_CHECK(mdns_init());
+    ESP_ERROR_CHECK(mdns_hostname_set("esp-arm"));  // -> esp-arm.local
+    ESP_ERROR_CHECK(mdns_instance_name_set("Robotic Arm ESP"));
+
+    // Advertise HTTP service on port 80
+    ESP_ERROR_CHECK(mdns_service_add(NULL, "_http", "_tcp", 80, NULL, 0));
+
+    started = true;
+    ESP_LOGI(TAG, "mDNS started: http://esp-arm.local/");
+}
+
+//--------------------------------------------------------
+
+
 
 static httpd_handle_t s_http = NULL;
 static EventGroupHandle_t s_wifi_event_group = NULL;
@@ -43,30 +59,57 @@ static int s_retry_num = 0;
 #define WIFI_MAX_RETRY 10
 #endif
 
-static void wifi_event_handler(void* arg,
+static void wifi_event_handler(void *arg,
                                esp_event_base_t event_base,
                                int32_t event_id,
-                               void* event_data)
+                               void *event_data)
 {
     (void)arg;
     (void)event_data;
 
-    if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
-        esp_wifi_connect();
-    }
-    else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
-        if (s_retry_num < WIFI_MAX_RETRY) {
-            s_retry_num++;
-            ESP_LOGW(TAG, "Wi-Fi disconnected, retrying (%d/%d)", s_retry_num, WIFI_MAX_RETRY);
+    /* ---------------- WIFI EVENTS ---------------- */
+    if (event_base == WIFI_EVENT) {
+
+        switch (event_id) {
+
+        case WIFI_EVENT_STA_START:
+            ESP_LOGI(TAG, "Wi-Fi start, connecting...");
             esp_wifi_connect();
-        } else {
-            xEventGroupSetBits(s_wifi_event_group, WIFI_FAIL_BIT);
+            break;
+
+        case WIFI_EVENT_STA_DISCONNECTED:
+            if (s_retry_num < WIFI_MAX_RETRY) {
+                s_retry_num++;
+                ESP_LOGW(TAG,
+                         "Wi-Fi disconnected, retrying (%d/%d)",
+                         s_retry_num,
+                         WIFI_MAX_RETRY);
+                esp_wifi_connect();
+            } else {
+                ESP_LOGE(TAG, "Wi-Fi failed after %d retries", WIFI_MAX_RETRY);
+                xEventGroupSetBits(s_wifi_event_group, WIFI_FAIL_BIT);
+            }
+            break;
+
+        default:
+            break;
         }
     }
-    else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
-        s_retry_num = 0;
-        xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
-        ESP_LOGI(TAG, "Wi-Fi connected (got IP)");
+
+    /* ---------------- IP EVENTS ---------------- */
+    else if (event_base == IP_EVENT) {
+
+        if (event_id == IP_EVENT_STA_GOT_IP) {
+
+            s_retry_num = 0;
+
+            xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
+
+            ESP_LOGI(TAG, "Wi-Fi connected (IP acquired)");
+
+            /* Start mDNS once network stack is ready */
+            mdns_start();
+        }
     }
 }
 
@@ -87,16 +130,25 @@ static void wifi_init_sta(void)
     ESP_ERROR_CHECK(esp_event_handler_instance_register(
         IP_EVENT, IP_EVENT_STA_GOT_IP, &wifi_event_handler, NULL, NULL));
 
-    wifi_config_t wifi_config = {0};
-    strncpy((char*)wifi_config.sta.ssid, WIFI_SSID, sizeof(wifi_config.sta.ssid));
-    strncpy((char*)wifi_config.sta.password, WIFI_PASS, sizeof(wifi_config.sta.password));
+wifi_config_t wifi_config = {0};
+
+snprintf((char*)wifi_config.sta.ssid,
+         sizeof(wifi_config.sta.ssid),
+         "%s",
+         CONFIG_ROBOT_WIFI_SSID);
+
+snprintf((char*)wifi_config.sta.password,
+         sizeof(wifi_config.sta.password),
+         "%s",
+         CONFIG_ROBOT_WIFI_PASSWORD);
+
     wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
 
-    ESP_LOGI(TAG, "Wi-Fi STA start: SSID=%s", WIFI_SSID);
+    ESP_LOGI(TAG, "Wi-Fi STA start: SSID=%s", CONFIG_ROBOT_WIFI_SSID);
 
     EventBits_t bits = xEventGroupWaitBits(
         s_wifi_event_group,
@@ -146,6 +198,113 @@ static bool query_get_i32(httpd_req_t *req, const char *key, int32_t *out)
 
 // -------------------- Handlers --------------------
 
+// GET /crawl?joint=0&dir=R&deg=1.5   (dir: R clockwise, L counterclockwise; deg or degree)
+static esp_err_t crawl_handler(httpd_req_t *req)
+{
+    int32_t joint = -1;
+    if (!query_get_i32(req, "joint", &joint)) {
+        return send_text(req, "Missing joint", 400);
+    }
+    if (joint < 0 || joint >= CONFIG_AXES) {
+        return send_text(req, "Invalid joint", 400);
+    }
+
+    char qs[160];
+    if (httpd_req_get_url_query_str(req, qs, sizeof(qs)) != ESP_OK) {
+        return send_text(req, "Missing query", 400);
+    }
+
+    char dirval[8];
+    if (httpd_query_key_value(qs, "dir", dirval, sizeof(dirval)) != ESP_OK) {
+        return send_text(req, "Missing dir (R or L)", 400);
+    }
+
+    char degstr[32];
+    float deg = 0.f;
+    if (httpd_query_key_value(qs, "deg", degstr, sizeof(degstr)) == ESP_OK) {
+        deg = strtof(degstr, NULL);
+    } else if (httpd_query_key_value(qs, "degree", degstr, sizeof(degstr)) == ESP_OK) {
+        deg = strtof(degstr, NULL);
+    } else {
+        return send_text(req, "Missing deg or degree", 400);
+    }
+
+    char d = dirval[0];
+    if (!isalpha((unsigned char)d)) {
+        return send_text(req, "Invalid dir (use R or L)", 400);
+    }
+
+    safety_note_command_rx();
+
+    if (!safety_motion_allowed()) {
+        return send_text(req, "Motion not allowed (safety state)", 403);
+    }
+
+    if (!motion_crawl_degrees((uint8_t)joint, d, deg)) {
+        return send_text(req, "Crawl rejected (need deg>0, dir R/L)", 400);
+    }
+
+    return send_text(req, "OK", 200);
+}
+
+// GET /rotate?joint=0&dir=R&deg=5&rpm=2.0
+// Like /crawl, but speed is requested in output-shaft RPM.
+static esp_err_t rotate_handler(httpd_req_t *req)
+{
+    int32_t joint = -1;
+    if (!query_get_i32(req, "joint", &joint)) {
+        return send_text(req, "Missing joint", 400);
+    }
+    if (joint < 0 || joint >= CONFIG_AXES) {
+        return send_text(req, "Invalid joint", 400);
+    }
+
+    char qs[200];
+    if (httpd_req_get_url_query_str(req, qs, sizeof(qs)) != ESP_OK) {
+        return send_text(req, "Missing query", 400);
+    }
+
+    char dirval[8];
+    if (httpd_query_key_value(qs, "dir", dirval, sizeof(dirval)) != ESP_OK) {
+        return send_text(req, "Missing dir (R or L)", 400);
+    }
+
+    char degstr[32];
+    float deg = 0.f;
+    if (httpd_query_key_value(qs, "deg", degstr, sizeof(degstr)) == ESP_OK) {
+        deg = strtof(degstr, NULL);
+    } else if (httpd_query_key_value(qs, "degree", degstr, sizeof(degstr)) == ESP_OK) {
+        deg = strtof(degstr, NULL);
+    } else {
+        return send_text(req, "Missing deg or degree", 400);
+    }
+
+    char rpmstr[32];
+    float rpm = 0.f;
+    if (httpd_query_key_value(qs, "rpm", rpmstr, sizeof(rpmstr)) == ESP_OK) {
+        rpm = strtof(rpmstr, NULL);
+    } else {
+        return send_text(req, "Missing rpm", 400);
+    }
+
+    char d = dirval[0];
+    if (!isalpha((unsigned char)d)) {
+        return send_text(req, "Invalid dir (use R or L)", 400);
+    }
+
+    safety_note_command_rx();
+
+    if (!safety_motion_allowed()) {
+        return send_text(req, "Motion not allowed (safety state)", 403);
+    }
+
+    if (!motion_rotate_degrees((uint8_t)joint, d, deg, rpm)) {
+        return send_text(req, "Rotate rejected (need deg>0, rpm>0, dir R/L)", 400);
+    }
+
+    return send_text(req, "OK", 200);
+}
+
 // GET /cmd?axis=0&steps=1234
 static esp_err_t cmd_handler(httpd_req_t *req)
 {
@@ -169,8 +328,17 @@ static esp_err_t cmd_handler(httpd_req_t *req)
     // Optional: enforce soft limits here using config if you want steps-limits
     // (Right now config exposes angle limits; we can add step limits later.)
 
-    if (!motion_set_target_steps((uint8_t)axis, steps)) {
-        return send_text(req, "Failed to set target", 500);
+    char qs[160];
+    float rpm = 2.0f; // default command speed if rpm is omitted
+    if (httpd_req_get_url_query_str(req, qs, sizeof(qs)) == ESP_OK) {
+        char rpmstr[32];
+        if (httpd_query_key_value(qs, "rpm", rpmstr, sizeof(rpmstr)) == ESP_OK) {
+            rpm = strtof(rpmstr, NULL);
+        }
+    }
+
+    if (!motion_set_target_steps_rpm((uint8_t)axis, steps, rpm)) {
+        return send_text(req, "Failed to set target (check rpm>0)", 400);
     }
 
     return send_text(req, "OK", 200);
@@ -220,6 +388,32 @@ static esp_err_t state_handler(httpd_req_t *req)
     return send_json(req, buf);
 }
 
+// GET /uptime
+static esp_err_t uptime_handler(httpd_req_t *req)
+{
+    // microseconds since boot
+    int64_t us = esp_timer_get_time();
+
+    uint64_t ms  = (uint64_t)(us / 1000);
+    uint64_t sec = ms / 1000;
+    uint64_t min = sec / 60;
+    uint64_t hr  = min / 60;
+    uint64_t day = hr  / 24;
+
+    char buf[128];
+
+    snprintf(buf, sizeof(buf),
+             "{\"uptime_ms\":%llu,\"uptime_s\":%llu,"
+             "\"d\":%llu,\"h\":%llu,\"m\":%llu,\"s\":%llu}",
+             (unsigned long long)ms,
+             (unsigned long long)sec,
+             (unsigned long long)day,
+             (unsigned long long)(hr  % 24),
+             (unsigned long long)(min % 60),
+             (unsigned long long)(sec % 60));
+
+    return send_json(req, buf);
+}
 // -------------------- HTTP server start --------------------
 
 static void http_server_start(void)
@@ -233,6 +427,18 @@ static void http_server_start(void)
         return;
     }
 
+    httpd_uri_t uri_crawl = {
+        .uri      = "/crawl",
+        .method   = HTTP_GET,
+        .handler  = crawl_handler,
+        .user_ctx = NULL
+    };
+    httpd_uri_t uri_rotate = {
+        .uri      = "/rotate",
+        .method   = HTTP_GET,
+        .handler  = rotate_handler,
+        .user_ctx = NULL
+    };
     httpd_uri_t uri_cmd = {
         .uri      = "/cmd",
         .method   = HTTP_GET,
@@ -257,13 +463,22 @@ static void http_server_start(void)
         .handler  = state_handler,
         .user_ctx = NULL
     };
-
+    httpd_uri_t uri_uptime = {
+        .uri      = "/uptime",
+        .method   = HTTP_GET,
+        .handler  = uptime_handler,
+        .user_ctx = NULL
+    };
+    
+    ESP_ERROR_CHECK(httpd_register_uri_handler(s_http, &uri_crawl));
+    ESP_ERROR_CHECK(httpd_register_uri_handler(s_http, &uri_rotate));
     ESP_ERROR_CHECK(httpd_register_uri_handler(s_http, &uri_cmd));
     ESP_ERROR_CHECK(httpd_register_uri_handler(s_http, &uri_stop));
     ESP_ERROR_CHECK(httpd_register_uri_handler(s_http, &uri_estop));
     ESP_ERROR_CHECK(httpd_register_uri_handler(s_http, &uri_state));
+    ESP_ERROR_CHECK(httpd_register_uri_handler(s_http, &uri_uptime));
 
-    ESP_LOGI(TAG, "HTTP server started: /cmd /stop /estop /state");
+    ESP_LOGI(TAG, "HTTP server started: /crawl /rotate /cmd /stop /estop /state /uptime");
 }
 
 // -------------------- Public API --------------------

@@ -10,6 +10,7 @@
 #include "config.h"
 #include "hal_gpio.h"
 #include "motion.h"
+#include "pulse_gen.h"
 #include "safety.h"
 #include "comms.h"
 
@@ -35,6 +36,7 @@ void app_main(void)
      * ------------------------------------------------- */
     safety_init();            // clear faults, motion not allowed
     motion_init();            // init axis states, planners, timers
+    ESP_ERROR_CHECK(pulse_gen_init());
     comms_init();             // Wi-Fi + web server (async)
 
     /* -------------------------------------------------

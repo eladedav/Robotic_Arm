@@ -1,69 +1,131 @@
-| Supported Targets | ESP32 | ESP32-C2 | ESP32-C3 | ESP32-C5 | ESP32-C6 | ESP32-C61 | ESP32-H2 | ESP32-H21 | ESP32-P4 | ESP32-S2 | ESP32-S3 |
-| ----------------- | ----- | -------- | -------- | -------- | -------- | --------- | -------- | --------- | -------- | -------- | -------- |
+# Robotic Arm Firmware (ESP-IDF)
 
-# Blink Example
+Embedded firmware for a 4-axis stepper-motor robotic arm, built with ESP-IDF on ESP32.
+The system exposes a lightweight HTTP control API over Wi-Fi and includes runtime safety
+gating, motion control, and status reporting.
 
-(See the README.md file in the upper level 'examples' directory for more information about examples.)
+## Highlights
 
-This example demonstrates how to blink a LED by using the GPIO driver or using the [led_strip](https://components.espressif.com/component/espressif/led_strip) library if the LED is addressable e.g. [WS2812](https://cdn-shop.adafruit.com/datasheets/WS2812B.pdf). The `led_strip` library is installed via [component manager](main/idf_component.yml).
+- 4 independent stepper axes (`0..3`) with configurable mechanics and soft limits
+- HTTP control endpoints for relative and absolute motion commands
+- Wi-Fi station mode with mDNS (`http://esp-arm.local/`)
+- Dedicated safety task with fault handling and emergency stop path
+- GPTimer-based pulse generation for clean STEP signal output
+- Modular architecture (configuration, motion, comms, safety, HAL)
 
-## How to Use Example
+## System Architecture
 
-Before project configuration and build, be sure to set the correct chip target using `idf.py set-target <chip_name>`.
+- `main/main.c` - boot sequence, subsystem initialization, and task startup
+- `main/config.*` - axis configuration, conversions (`deg <-> steps`), limits
+- `main/board_pins.h` - board-level GPIO assignments per joint
+- `main/hal_gpio.*` - low-level STEP/DIR/EN line control
+- `main/pulse_gen.*` - GPTimer pulse generation per axis
+- `main/motion.*` - target tracking, motion execution, and movement APIs
+- `main/safety.*` - system state machine, fault flags, motion permission logic
+- `main/comms.*` - Wi-Fi connection, mDNS, HTTP server, request handlers
 
-### Hardware Required
+## Control API
 
-* A development board with normal LED or addressable LED on-board (e.g., ESP32-S3-DevKitC, ESP32-C6-DevKitC etc.)
-* A USB cable for Power supply and programming
+All endpoints are currently `GET`.
 
-See [Development Boards](https://www.espressif.com/en/products/devkits) for more information about it.
+- `/crawl?joint=<0-3>&dir=<R|L>&deg=<degrees>`
+  - Slow relative motion by angle.
+  - `R` = clockwise (+), `L` = counterclockwise (-).
+  - Also accepts `degree=` instead of `deg=`.
+- `/rotate?joint=<0-3>&dir=<R|L>&deg=<degrees>&rpm=<rpm>`
+  - Relative angular motion at requested output-shaft speed.
+- `/cmd?axis=<0-3>&steps=<target_steps>&rpm=<rpm>`
+  - Absolute target in step units (`rpm` optional).
+- `/stop`
+  - Controlled stop for all axes.
+- `/estop`
+  - Emergency stop: halts motion and disables motor drivers.
+- `/state`
+  - JSON system snapshot (`state`, `faults`, positions, moving flag).
+- `/uptime`
+  - JSON uptime counters.
 
-### Configure the Project
-
-Open the project configuration menu (`idf.py menuconfig`).
-
-In the `Example Configuration` menu:
-
-* Select the LED type in the `Blink LED type` option.
-  * Use `GPIO` for regular LED
-  * Use `LED strip` for addressable LED
-* If the LED type is `LED strip`, select the backend peripheral
-  * `RMT` is only available for ESP targets with RMT peripheral supported
-  * `SPI` is available for all ESP targets
-* Set the GPIO number used for the signal in the `Blink GPIO number` option.
-* Set the blinking period in the `Blink period in ms` option.
-
-### Build and Flash
-
-Run `idf.py -p PORT flash monitor` to build, flash and monitor the project.
-
-(To exit the serial monitor, type ``Ctrl-]``.)
-
-See the [Getting Started Guide](https://docs.espressif.com/projects/esp-idf/en/latest/get-started/index.html) for full steps to configure and use ESP-IDF to build projects.
-
-## Example Output
-
-As you run the example, you will see the LED blinking, according to the previously defined period. For the addressable LED, you can also change the LED color by setting the `led_strip_set_pixel(led_strip, 0, 16, 16, 16);` (LED Strip, Pixel Number, Red, Green, Blue) with values from 0 to 255 in the [source file](main/blink_example_main.c).
+Example requests:
 
 ```text
-I (315) example: Example configured to blink addressable LED!
-I (325) example: Turning the LED OFF!
-I (1325) example: Turning the LED ON!
-I (2325) example: Turning the LED OFF!
-I (3325) example: Turning the LED ON!
-I (4325) example: Turning the LED OFF!
-I (5325) example: Turning the LED ON!
-I (6325) example: Turning the LED OFF!
-I (7325) example: Turning the LED ON!
-I (8325) example: Turning the LED OFF!
+http://<device-ip>/cmd?axis=1&steps=2500
+http://<device-ip>/crawl?joint=2&dir=R&deg=5
+http://<device-ip>/rotate?joint=2&dir=L&deg=15&rpm=2.5
+http://esp-arm.local/state
 ```
 
-Note: The color order could be different according to the LED model.
+## Build and Flash
 
-The pixel number indicates the pixel position in the LED strip. For a single LED, use 0.
+### Prerequisites
 
-## Troubleshooting
+- ESP-IDF `v5.x` installed and exported in your shell
+- ESP32 development board connected over USB
+- Python environment required by ESP-IDF
 
-* If the LED isn't blinking, check the GPIO or the LED type selection in the `Example Configuration` menu.
+### Steps
 
-For any technical queries, please open an [issue](https://github.com/espressif/esp-idf/issues) on GitHub. We will get back to you soon.
+1. Set target:
+
+```bash
+idf.py set-target esp32
+```
+
+2. Configure firmware options:
+
+```bash
+idf.py menuconfig
+```
+
+3. Build, flash, and open serial monitor:
+
+```bash
+idf.py -p <PORT> flash monitor
+```
+
+Exit monitor with `Ctrl-]`.
+
+## Configuration
+
+### Wi-Fi credentials
+
+Configure network credentials in menuconfig:
+
+```text
+Robotic Arm Configuration
+  -> Wi-Fi SSID
+  -> Wi-Fi Password
+```
+
+These are defined in `main/Kconfig.projbuild` and used through:
+- `CONFIG_ROBOT_WIFI_SSID`
+- `CONFIG_ROBOT_WIFI_PASSWORD`
+
+### Axis and mechanics
+
+Edit these files to match your hardware:
+- `main/board_pins.h` for GPIO wiring
+- `main/config.c` for microstepping, gear ratio, limits, and speed constraints
+
+## Safety Model
+
+- Drivers are disabled at boot and enabled only after system enters `READY`
+- Motion commands are rejected unless safety state allows movement
+- `ESTOP` immediately stops motion and disables all drivers
+- Fault conditions transition system to `FAULT` state
+
+## Current Limitations
+
+- No coordinated multi-axis trajectory planner yet
+- No acceleration/jerk profile (fixed-step-rate style control)
+- Position is relative from boot unless homing is added
+
+## Roadmap Ideas
+
+- Homing and limit switch integration
+- Trajectory planning (trapezoidal/S-curve profiles)
+- Authentication layer for network API
+- Optional WebSocket or MQTT control interface
+
+## License
+
+Add your preferred license before publishing (for example, MIT).

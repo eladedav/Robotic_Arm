@@ -25,6 +25,17 @@ void motion_stop_axis(uint8_t axis);
 
 // Set absolute target in STEPS (internal units)
 bool motion_set_target_steps(uint8_t axis, int32_t target_steps);
+bool motion_set_target_steps_rpm(uint8_t axis, int32_t target_steps, float rpm);
+
+// Relative move by angle (degrees), very slow stepping (see MOTION_CRAWL_STEP_PERIOD_MS).
+// dir: 'R' or 'r' = clockwise (+), 'L' or 'l' = counterclockwise (-) in joint step space.
+// Resulting target is clamped to configured min/max joint angles.
+bool motion_crawl_degrees(uint8_t axis, char dir, float degrees);
+
+// Relative move by angle (degrees) with requested speed in output-shaft RPM.
+// dir: 'R' or 'r' = clockwise (+), 'L' or 'l' = counterclockwise (-) in joint step space.
+// Resulting target is clamped to configured min/max joint angles.
+bool motion_rotate_degrees(uint8_t axis, char dir, float degrees, float rpm);
 
 // Get current position in STEPS
 int32_t motion_get_position_steps(uint8_t axis);
