@@ -1,6 +1,8 @@
 // comms.c
 #include "comms.h"
 
+#include <mdns.h>
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -24,6 +26,27 @@
 
 static const char *TAG = "comms";
 
+//-------------------- Helper functions --------------------
+static void mdns_start(void)
+{
+    static bool started = false;
+    if (started) return;
+
+    ESP_ERROR_CHECK(mdns_init());
+    ESP_ERROR_CHECK(mdns_hostname_set("esp-arm"));  // -> esp-arm.local
+    ESP_ERROR_CHECK(mdns_instance_name_set("Robotic Arm ESP"));
+
+    // Advertise HTTP service on port 80
+    ESP_ERROR_CHECK(mdns_service_add(NULL, "_http", "_tcp", 80, NULL, 0));
+
+    started = true;
+    ESP_LOGI(TAG, "mDNS started: http://esp-arm.local/");
+}
+
+//--------------------------------------------------------
+
+
+
 static httpd_handle_t s_http = NULL;
 static EventGroupHandle_t s_wifi_event_group = NULL;
 
@@ -35,30 +58,57 @@ static int s_retry_num = 0;
 #define WIFI_MAX_RETRY 10
 #endif
 
-static void wifi_event_handler(void* arg,
+static void wifi_event_handler(void *arg,
                                esp_event_base_t event_base,
                                int32_t event_id,
-                               void* event_data)
+                               void *event_data)
 {
     (void)arg;
     (void)event_data;
 
-    if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
-        esp_wifi_connect();
-    }
-    else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
-        if (s_retry_num < WIFI_MAX_RETRY) {
-            s_retry_num++;
-            ESP_LOGW(TAG, "Wi-Fi disconnected, retrying (%d/%d)", s_retry_num, WIFI_MAX_RETRY);
+    /* ---------------- WIFI EVENTS ---------------- */
+    if (event_base == WIFI_EVENT) {
+
+        switch (event_id) {
+
+        case WIFI_EVENT_STA_START:
+            ESP_LOGI(TAG, "Wi-Fi start, connecting...");
             esp_wifi_connect();
-        } else {
-            xEventGroupSetBits(s_wifi_event_group, WIFI_FAIL_BIT);
+            break;
+
+        case WIFI_EVENT_STA_DISCONNECTED:
+            if (s_retry_num < WIFI_MAX_RETRY) {
+                s_retry_num++;
+                ESP_LOGW(TAG,
+                         "Wi-Fi disconnected, retrying (%d/%d)",
+                         s_retry_num,
+                         WIFI_MAX_RETRY);
+                esp_wifi_connect();
+            } else {
+                ESP_LOGE(TAG, "Wi-Fi failed after %d retries", WIFI_MAX_RETRY);
+                xEventGroupSetBits(s_wifi_event_group, WIFI_FAIL_BIT);
+            }
+            break;
+
+        default:
+            break;
         }
     }
-    else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
-        s_retry_num = 0;
-        xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
-        ESP_LOGI(TAG, "Wi-Fi connected (got IP)");
+
+    /* ---------------- IP EVENTS ---------------- */
+    else if (event_base == IP_EVENT) {
+
+        if (event_id == IP_EVENT_STA_GOT_IP) {
+
+            s_retry_num = 0;
+
+            xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
+
+            ESP_LOGI(TAG, "Wi-Fi connected (IP acquired)");
+
+            /* Start mDNS once network stack is ready */
+            mdns_start();
+        }
     }
 }
 
