@@ -3,6 +3,7 @@ idf_component_register(
         "main.c"
         "config.c"
         "motion.c"
+        "pulse_gen.c"
         "comms.c"
         "safety.c"
         "hal_gpio.c"
@@ -15,5 +16,6 @@ idf_component_register(
         esp_netif
         esp_http_server
         esp_driver_gpio
+        esp_driver_gptimer
         esp_timer
 )

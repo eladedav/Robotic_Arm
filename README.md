@@ -1,69 +1,81 @@
-| Supported Targets | ESP32 | ESP32-C2 | ESP32-C3 | ESP32-C5 | ESP32-C6 | ESP32-C61 | ESP32-H2 | ESP32-H21 | ESP32-P4 | ESP32-S2 | ESP32-S3 |
-| ----------------- | ----- | -------- | -------- | -------- | -------- | --------- | -------- | --------- | -------- | -------- | -------- |
+# Robotic Arm Firmware (ESP-IDF)
 
-# Blink Example
+Firmware for a 4-axis stepper-based robotic arm running on ESP32 with FreeRTOS.
 
-(See the README.md file in the upper level 'examples' directory for more information about examples.)
+## Current Features
 
-This example demonstrates how to blink a LED by using the GPIO driver or using the [led_strip](https://components.espressif.com/component/espressif/led_strip) library if the LED is addressable e.g. [WS2812](https://cdn-shop.adafruit.com/datasheets/WS2812B.pdf). The `led_strip` library is installed via [component manager](main/idf_component.yml).
+- 4 axis motion control in step units (`axis=0..3`)
+- Slow relative moves by angle over HTTP (`/crawl`)
+- Relative angle moves with requested RPM over HTTP (`/rotate`)
+- GPIO HAL for `STEP` / `DIR` / `EN` motor driver signals
+- Safety supervision task with `FAULT` and `ESTOP` states
+- Wi-Fi station mode + HTTP control API
+- Runtime state and uptime endpoints
 
-## How to Use Example
+## Project Structure
 
-Before project configuration and build, be sure to set the correct chip target using `idf.py set-target <chip_name>`.
+- `main/main.c` - startup sequence and subsystem initialization
+- `main/config.*` - axis pin map, mechanics, limits, and conversion helpers
+- `main/hal_gpio.*` - low-level GPIO control for motor drivers
+- `main/motion.*` - target tracking and step generation loop
+- `main/safety.*` - state machine, fault handling, motion gating
+- `main/comms.*` - Wi-Fi and HTTP server endpoints
 
-### Hardware Required
+## HTTP API
 
-* A development board with normal LED or addressable LED on-board (e.g., ESP32-S3-DevKitC, ESP32-C6-DevKitC etc.)
-* A USB cable for Power supply and programming
+All endpoints are currently `GET`.
 
-See [Development Boards](https://www.espressif.com/en/products/devkits) for more information about it.
+- `/crawl?joint=<0-3>&dir=<R|L>&deg=<degrees>` - relative move by degrees, very slow (also accepts `degree=` instead of `deg=`). `R` = clockwise (+), `L` = counterclockwise (-) in step space; target is clamped to joint angle limits in `config.c`
+- `/rotate?joint=<0-3>&dir=<R|L>&deg=<degrees>&rpm=<rpm>` - relative move by degrees at requested output RPM (also accepts `degree=` instead of `deg=`); same direction and limit behavior as `/crawl`
+- `/cmd?axis=<0-3>&steps=<target_steps>&rpm=<rpm>` - set absolute target in steps at requested speed (rpm optional; default if omitted)
+- `/stop` - controlled stop for all axes
+- `/estop` - emergency stop (disable drivers + stop motion)
+- `/state` - returns state, faults, positions, moving flag (JSON)
+- `/uptime` - returns uptime data (JSON)
 
-### Configure the Project
-
-Open the project configuration menu (`idf.py menuconfig`).
-
-In the `Example Configuration` menu:
-
-* Select the LED type in the `Blink LED type` option.
-  * Use `GPIO` for regular LED
-  * Use `LED strip` for addressable LED
-* If the LED type is `LED strip`, select the backend peripheral
-  * `RMT` is only available for ESP targets with RMT peripheral supported
-  * `SPI` is available for all ESP targets
-* Set the GPIO number used for the signal in the `Blink GPIO number` option.
-* Set the blinking period in the `Blink period in ms` option.
-
-### Build and Flash
-
-Run `idf.py -p PORT flash monitor` to build, flash and monitor the project.
-
-(To exit the serial monitor, type ``Ctrl-]``.)
-
-See the [Getting Started Guide](https://docs.espressif.com/projects/esp-idf/en/latest/get-started/index.html) for full steps to configure and use ESP-IDF to build projects.
-
-## Example Output
-
-As you run the example, you will see the LED blinking, according to the previously defined period. For the addressable LED, you can also change the LED color by setting the `led_strip_set_pixel(led_strip, 0, 16, 16, 16);` (LED Strip, Pixel Number, Red, Green, Blue) with values from 0 to 255 in the [source file](main/blink_example_main.c).
+Example:
 
 ```text
-I (315) example: Example configured to blink addressable LED!
-I (325) example: Turning the LED OFF!
-I (1325) example: Turning the LED ON!
-I (2325) example: Turning the LED OFF!
-I (3325) example: Turning the LED ON!
-I (4325) example: Turning the LED OFF!
-I (5325) example: Turning the LED ON!
-I (6325) example: Turning the LED OFF!
-I (7325) example: Turning the LED ON!
-I (8325) example: Turning the LED OFF!
+http://<device-ip>/cmd?axis=1&steps=2500
+http://<device-ip>/crawl?joint=2&dir=R&deg=5
+http://<device-ip>/rotate?joint=2&dir=L&deg=15&rpm=2.5
 ```
 
-Note: The color order could be different according to the LED model.
+## Build and Flash
 
-The pixel number indicates the pixel position in the LED strip. For a single LED, use 0.
+1. Set target (if needed):
 
-## Troubleshooting
+```bash
+idf.py set-target esp32
+```
 
-* If the LED isn't blinking, check the GPIO or the LED type selection in the `Example Configuration` menu.
+2. Configure project options:
 
-For any technical queries, please open an [issue](https://github.com/espressif/esp-idf/issues) on GitHub. We will get back to you soon.
+```bash
+idf.py menuconfig
+```
+
+3. Build/flash/monitor:
+
+```bash
+idf.py -p <PORT> flash monitor
+```
+
+Exit monitor with `Ctrl-]`.
+
+## Configuration Notes
+
+- Axis pins and kinematic parameters are defined in `main/config.c`.
+- Wi-Fi credentials are currently defined in `main/comms.c` via `WIFI_SSID` and `WIFI_PASS`.
+- Drivers are initialized disabled, then enabled when safety enters `READY`.
+
+## Known Limitations (Current Implementation)
+
+- Motion loop is simple fixed-rate stepping (`MOTION_TASK_PERIOD_MS`, default 1 ms).
+- Crawl uses a longer per-step interval (`MOTION_CRAWL_STEP_PERIOD_MS` in `motion.c`, default 250 ms).
+- No acceleration profile or coordinated multi-axis planner yet.
+- `/cmd` uses absolute steps only; soft angle limits are applied for `/crawl` and `config_angle_deg_to_steps`.
+
+## Cleanup from ESP-IDF Blink Template
+
+This repository originally started from the blink template. Template documentation and unused `led_strip` dependency have been removed from project metadata.
