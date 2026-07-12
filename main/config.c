@@ -20,7 +20,7 @@ const axis_config_t g_axis_cfg[CONFIG_AXES] = {
 
         .full_steps_per_rev = 200,
         .microsteps = 16,
-        .gear_ratio = 1.0f,
+        .gear_ratio = 2.0f,
 
         .min_angle_deg = -180.0f,
         .max_angle_deg =  180.0f,
@@ -63,7 +63,7 @@ const axis_config_t g_axis_cfg[CONFIG_AXES] = {
 
         .full_steps_per_rev = 200,
         .microsteps = 16,
-        .gear_ratio = 5.0f,
+        .gear_ratio = 1.0f,
 
         .min_angle_deg = -180.0f,
         .max_angle_deg =  180.0f,
@@ -84,7 +84,7 @@ const axis_config_t g_axis_cfg[CONFIG_AXES] = {
 
         .full_steps_per_rev = 200,
         .microsteps = 16,
-        .gear_ratio = 5.0f,
+        .gear_ratio = 1.0f,
 
         .min_angle_deg = -180.0f,
         .max_angle_deg =  180.0f,
