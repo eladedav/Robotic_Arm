@@ -1,6 +1,6 @@
 # Robotic Arm Firmware (ESP-IDF)
 
-ESP32 firmware for a 4-axis stepper robotic arm with HTTP control (`/cmd`, `/crawl`, `/rotate`) and safety states.
+ESP32 firmware for a 4-axis stepper robotic arm with HTTP control (`/rotate`, `/movej`, `/jog_start`, `/setpos`, `/home`) and safety states.
 
 ## Motor Driver Pin Assignment
 
@@ -17,8 +17,12 @@ ESP32 firmware for a 4-axis stepper robotic arm with HTTP control (`/cmd`, `/cra
 
 All endpoints are `GET`.
 
-- `/crawl?joint=<0-3>&dir=<R|L>&deg=<degrees>`
 - `/rotate?joint=<0-3>&dir=<R|L>&deg=<degrees>&rpm=<rpm>`
+- `/movej?rpm=<rpm>&j0=<deg>&j1=<deg>&j2=<deg>&j3=<deg>` (relative multi-axis move)
+- `/jog_start?joint=<0-3>&dir=<R|L>&rpm=<rpm>`
+- `/jog_stop` or `/jog_stop?joint=<0-3>`
+- `/setpos?joint=<0-3>&deg=<degrees>` or `/setpos?joint=<0-3>&steps=<steps>`
+- `/home?joint=<0-3>`
 - `/cmd?axis=<0-3>&steps=<target_steps>&rpm=<rpm>`
 - `/stop`
 - `/estop`
@@ -29,8 +33,12 @@ Example:
 
 ```text
 http://<device-ip>/cmd?axis=1&steps=2500&rpm=20
-http://<device-ip>/crawl?joint=2&dir=R&deg=5
 http://<device-ip>/rotate?joint=2&dir=L&deg=15&rpm=60
+http://<device-ip>/movej?rpm=10&j0=5&j1=-3&j2=0&j3=2
+http://<device-ip>/jog_start?joint=1&dir=R&rpm=20
+http://<device-ip>/jog_stop?joint=1
+http://<device-ip>/setpos?joint=0&deg=0
+http://<device-ip>/home?joint=0
 ```
 
 ## Build and Flash

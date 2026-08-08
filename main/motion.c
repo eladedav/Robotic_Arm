@@ -6,6 +6,7 @@
 #include "pulse_gen.h"
 
 #include <math.h>
+#include <limits.h>
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -35,13 +36,19 @@ static TaskHandle_t s_motion_task_handle = NULL;
 #define MOTION_TASK_PERIOD_MS 1
 #endif
 
-// Crawl speed in terms of step interval (legacy behavior).
-#ifndef MOTION_CRAWL_STEP_PERIOD_MS
-#define MOTION_CRAWL_STEP_PERIOD_MS 250
-#endif
-
 static inline bool axis_valid(uint8_t axis) {
     return axis < CONFIG_AXES;
+}
+
+static int dir_to_sign(char dir)
+{
+    char d = dir;
+    if (d >= 'a' && d <= 'z') {
+        d = (char)(d - 'a' + 'A');
+    }
+    if (d == 'R') return 1;
+    if (d == 'L') return -1;
+    return 0;
 }
 
 static inline TickType_t motion_ms_to_ticks_min1(uint32_t ms)
@@ -75,6 +82,20 @@ static uint32_t rpm_to_step_hz(const axis_config_t *a, float rpm)
     return (hz > 0U) ? hz : 1U;
 }
 
+static int32_t clamp_target_steps_to_limits(uint8_t axis, int32_t target_steps, const axis_config_t *a)
+{
+    int32_t lo = config_angle_deg_to_steps(axis, a->min_angle_deg);
+    int32_t hi = config_angle_deg_to_steps(axis, a->max_angle_deg);
+    if (lo > hi) {
+        int32_t t = lo;
+        lo = hi;
+        hi = t;
+    }
+    if (target_steps < lo) return lo;
+    if (target_steps > hi) return hi;
+    return target_steps;
+}
+
 static bool start_axis_move(uint8_t axis, int32_t target_steps, float rpm)
 {
     if (!axis_valid(axis) || !config_is_valid()) {
@@ -86,6 +107,9 @@ static bool start_axis_move(uint8_t axis, int32_t target_steps, float rpm)
     if (!a) {
         return false;
     }
+
+    // Enforce configured axis soft limits for all motion commands.
+    target_steps = clamp_target_steps_to_limits(axis, target_steps, a);
 
     int32_t delta = target_steps - m->current_steps;
     if (delta == 0) {
@@ -326,21 +350,62 @@ static bool move_relative_degrees_rpm(uint8_t axis, char dir, float degrees, flo
     return true;
 }
 
-bool motion_crawl_degrees(uint8_t axis, char dir, float degrees)
-{
-    const axis_config_t *a = config_axis(axis);
-    if (!a || !(a->steps_per_output_rev > 0.0f)) {
-        return false;
-    }
-    float crawl_sps = 1000.0f / (float)MOTION_CRAWL_STEP_PERIOD_MS;
-    float crawl_rpm = (crawl_sps * 60.0f) / a->steps_per_output_rev;
-    return move_relative_degrees_rpm(axis, dir, degrees, crawl_rpm, true);
-}
-
 bool motion_rotate_degrees(uint8_t axis, char dir, float degrees, float rpm)
 {
-    // rotate is intended for multi-turn moves; do not clamp to soft angle limits.
+    // Target clamping to configured soft limits is enforced in start_axis_move().
     return move_relative_degrees_rpm(axis, dir, degrees, rpm, false);
+}
+
+bool motion_jog_start(uint8_t axis, char dir, float rpm)
+{
+    if (!axis_valid(axis) || !(rpm > 0.0f) || !config_is_valid()) {
+        return false;
+    }
+
+    int sign = dir_to_sign(dir);
+    if (sign == 0) {
+        return false;
+    }
+
+    int32_t cur = s_axis[axis].current_steps;
+    // Large finite target so jog behaves continuously for practical UI usage.
+    int32_t target = (sign > 0) ? (INT32_MAX - 1024) : (INT32_MIN + 1024);
+    if (!start_axis_move(axis, target, rpm)) {
+        return false;
+    }
+
+    ESP_LOGI(TAG, "jog start axis %u %c @ %.2f rpm (from %ld)",
+             (unsigned)axis, (sign > 0) ? 'R' : 'L', rpm, (long)cur);
+
+    if (s_motion_task_handle != NULL) {
+        xTaskNotifyGive(s_motion_task_handle);
+    }
+    return true;
+}
+
+bool motion_movej_relative_degrees(const float *deg_by_axis, float rpm)
+{
+    if (!deg_by_axis || !(rpm > 0.0f) || !config_is_valid()) {
+        return false;
+    }
+
+    bool any = false;
+    for (uint8_t i = 0; i < CONFIG_AXES; i++) {
+        float d = deg_by_axis[i];
+        if (d > 0.0f) {
+            if (!move_relative_degrees_rpm(i, 'R', d, rpm, false)) {
+                return false;
+            }
+            any = true;
+        } else if (d < 0.0f) {
+            if (!move_relative_degrees_rpm(i, 'L', -d, rpm, false)) {
+                return false;
+            }
+            any = true;
+        }
+    }
+
+    return any;
 }
 
 bool motion_is_any_moving(void)
@@ -355,4 +420,22 @@ bool motion_is_axis_moving(uint8_t axis)
 {
     if (!axis_valid(axis)) return false;
     return (s_axis[axis].target_steps != s_axis[axis].current_steps);
+}
+
+bool motion_set_position_degrees(uint8_t axis, float pos_deg)
+{
+    if (!axis_valid(axis) || !config_is_valid()) {
+        return false;
+    }
+    int32_t pos_steps = config_angle_deg_to_steps(axis, pos_deg);
+    return motion_set_position_steps(axis, pos_steps);
+}
+
+bool motion_home_axis(uint8_t axis)
+{
+    if (!axis_valid(axis)) {
+        return false;
+    }
+    motion_stop_axis(axis);
+    return motion_set_position_steps(axis, 0);
 }

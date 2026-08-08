@@ -196,59 +196,22 @@ static bool query_get_i32(httpd_req_t *req, const char *key, int32_t *out)
     return true;
 }
 
-// -------------------- Handlers --------------------
-
-// GET /crawl?joint=0&dir=R&deg=1.5   (dir: R clockwise, L counterclockwise; deg or degree)
-static esp_err_t crawl_handler(httpd_req_t *req)
+static bool query_get_f32(httpd_req_t *req, const char *key, float *out)
 {
-    int32_t joint = -1;
-    if (!query_get_i32(req, "joint", &joint)) {
-        return send_text(req, "Missing joint", 400);
-    }
-    if (joint < 0 || joint >= CONFIG_AXES) {
-        return send_text(req, "Invalid joint", 400);
-    }
+    char qs[256];
+    if (httpd_req_get_url_query_str(req, qs, sizeof(qs)) != ESP_OK) return false;
 
-    char qs[160];
-    if (httpd_req_get_url_query_str(req, qs, sizeof(qs)) != ESP_OK) {
-        return send_text(req, "Missing query", 400);
-    }
+    char val[32];
+    if (httpd_query_key_value(qs, key, val, sizeof(val)) != ESP_OK) return false;
 
-    char dirval[8];
-    if (httpd_query_key_value(qs, "dir", dirval, sizeof(dirval)) != ESP_OK) {
-        return send_text(req, "Missing dir (R or L)", 400);
-    }
-
-    char degstr[32];
-    float deg = 0.f;
-    if (httpd_query_key_value(qs, "deg", degstr, sizeof(degstr)) == ESP_OK) {
-        deg = strtof(degstr, NULL);
-    } else if (httpd_query_key_value(qs, "degree", degstr, sizeof(degstr)) == ESP_OK) {
-        deg = strtof(degstr, NULL);
-    } else {
-        return send_text(req, "Missing deg or degree", 400);
-    }
-
-    char d = dirval[0];
-    if (!isalpha((unsigned char)d)) {
-        return send_text(req, "Invalid dir (use R or L)", 400);
-    }
-
-    safety_note_command_rx();
-
-    if (!safety_motion_allowed()) {
-        return send_text(req, "Motion not allowed (safety state)", 403);
-    }
-
-    if (!motion_crawl_degrees((uint8_t)joint, d, deg)) {
-        return send_text(req, "Crawl rejected (need deg>0, dir R/L)", 400);
-    }
-
-    return send_text(req, "OK", 200);
+    *out = strtof(val, NULL);
+    return true;
 }
 
+// -------------------- Handlers --------------------
+
 // GET /rotate?joint=0&dir=R&deg=5&rpm=2.0
-// Like /crawl, but speed is requested in output-shaft RPM.
+// Single-axis relative rotate with requested output-shaft RPM.
 static esp_err_t rotate_handler(httpd_req_t *req)
 {
     int32_t joint = -1;
@@ -302,6 +265,163 @@ static esp_err_t rotate_handler(httpd_req_t *req)
         return send_text(req, "Rotate rejected (need deg>0, rpm>0, dir R/L)", 400);
     }
 
+    return send_text(req, "OK", 200);
+}
+
+// GET /home?joint=0
+static esp_err_t home_handler(httpd_req_t *req)
+{
+    int32_t joint = -1;
+    if (!query_get_i32(req, "joint", &joint)) {
+        return send_text(req, "Missing joint", 400);
+    }
+    if (joint < 0 || joint >= CONFIG_AXES) {
+        return send_text(req, "Invalid joint", 400);
+    }
+
+    safety_note_command_rx();
+    if (!motion_home_axis((uint8_t)joint)) {
+        return send_text(req, "Home failed", 400);
+    }
+    return send_text(req, "OK", 200);
+}
+
+// GET /setpos?joint=0&deg=0   or   /setpos?joint=0&steps=1234
+static esp_err_t setpos_handler(httpd_req_t *req)
+{
+    int32_t joint = -1;
+    if (!query_get_i32(req, "joint", &joint)) {
+        return send_text(req, "Missing joint", 400);
+    }
+    if (joint < 0 || joint >= CONFIG_AXES) {
+        return send_text(req, "Invalid joint", 400);
+    }
+
+    char qs[200];
+    if (httpd_req_get_url_query_str(req, qs, sizeof(qs)) != ESP_OK) {
+        return send_text(req, "Missing query", 400);
+    }
+
+    safety_note_command_rx();
+
+    char degstr[32];
+    if (httpd_query_key_value(qs, "deg", degstr, sizeof(degstr)) == ESP_OK) {
+        float deg = strtof(degstr, NULL);
+        if (!motion_set_position_degrees((uint8_t)joint, deg)) {
+            return send_text(req, "setpos deg failed", 400);
+        }
+        return send_text(req, "OK", 200);
+    }
+
+    char stepstr[32];
+    if (httpd_query_key_value(qs, "steps", stepstr, sizeof(stepstr)) == ESP_OK) {
+        int32_t steps = (int32_t)strtol(stepstr, NULL, 10);
+        if (!motion_set_position_steps((uint8_t)joint, steps)) {
+            return send_text(req, "setpos steps failed", 400);
+        }
+        return send_text(req, "OK", 200);
+    }
+
+    return send_text(req, "Missing deg or steps", 400);
+}
+
+// GET /jog_start?joint=0&dir=R&rpm=15
+static esp_err_t jog_start_handler(httpd_req_t *req)
+{
+    int32_t joint = -1;
+    if (!query_get_i32(req, "joint", &joint)) {
+        return send_text(req, "Missing joint", 400);
+    }
+    if (joint < 0 || joint >= CONFIG_AXES) {
+        return send_text(req, "Invalid joint", 400);
+    }
+
+    char qs[200];
+    if (httpd_req_get_url_query_str(req, qs, sizeof(qs)) != ESP_OK) {
+        return send_text(req, "Missing query", 400);
+    }
+
+    char dirval[8];
+    if (httpd_query_key_value(qs, "dir", dirval, sizeof(dirval)) != ESP_OK) {
+        return send_text(req, "Missing dir (R or L)", 400);
+    }
+
+    float rpm = 0.f;
+    if (!query_get_f32(req, "rpm", &rpm)) {
+        return send_text(req, "Missing rpm", 400);
+    }
+
+    safety_note_command_rx();
+    if (!safety_motion_allowed()) {
+        return send_text(req, "Motion not allowed (safety state)", 403);
+    }
+
+    if (!motion_jog_start((uint8_t)joint, dirval[0], rpm)) {
+        return send_text(req, "Jog start failed (need rpm>0, dir R/L)", 400);
+    }
+    return send_text(req, "OK", 200);
+}
+
+// GET /jog_stop?joint=0   (joint optional: without it stops all axes)
+static esp_err_t jog_stop_handler(httpd_req_t *req)
+{
+    int32_t joint = -1;
+    bool has_joint = query_get_i32(req, "joint", &joint);
+
+    safety_note_command_rx();
+
+    if (!has_joint) {
+        motion_stop_all();
+        return send_text(req, "OK", 200);
+    }
+    if (joint < 0 || joint >= CONFIG_AXES) {
+        return send_text(req, "Invalid joint", 400);
+    }
+
+    motion_stop_axis((uint8_t)joint);
+    return send_text(req, "OK", 200);
+}
+
+// GET /movej?rpm=10&j0=5&j1=-3&j2=0&j3=0
+// j0..j3 are relative move degrees per axis.
+static esp_err_t movej_handler(httpd_req_t *req)
+{
+    float rpm = 0.f;
+    if (!query_get_f32(req, "rpm", &rpm)) {
+        return send_text(req, "Missing rpm", 400);
+    }
+
+    char qs[256];
+    if (httpd_req_get_url_query_str(req, qs, sizeof(qs)) != ESP_OK) {
+        return send_text(req, "Missing query", 400);
+    }
+
+    float delta_deg[CONFIG_AXES] = {0};
+    bool any = false;
+    for (uint8_t i = 0; i < CONFIG_AXES; i++) {
+        char key[8];
+        snprintf(key, sizeof(key), "j%u", (unsigned)i);
+
+        char val[32];
+        if (httpd_query_key_value(qs, key, val, sizeof(val)) == ESP_OK) {
+            delta_deg[i] = strtof(val, NULL);
+            if (delta_deg[i] != 0.0f) {
+                any = true;
+            }
+        }
+    }
+    if (!any) {
+        return send_text(req, "Missing j0..j3 deltas", 400);
+    }
+
+    safety_note_command_rx();
+    if (!safety_motion_allowed()) {
+        return send_text(req, "Motion not allowed (safety state)", 403);
+    }
+
+    if (!motion_movej_relative_degrees(delta_deg, rpm)) {
+        return send_text(req, "movej rejected (need rpm>0, non-zero deltas)", 400);
+    }
     return send_text(req, "OK", 200);
 }
 
@@ -365,24 +485,29 @@ static esp_err_t state_handler(httpd_req_t *req)
 {
     // Build a small JSON without extra libs
     // Example:
-    // {"state":1,"faults":0,"pos_steps":[0,0,0,0],"moving":false}
-    char buf[256];
+    // {"state":1,"faults":0,"pos_deg":[0.0,0.0,0.0,0.0],"moving":false}
+    char buf[320];
 
     system_state_t st = safety_get_state();
     uint32_t faults = safety_get_fault_flags();
 
-    int32_t p0 = motion_get_position_steps(0);
-    int32_t p1 = motion_get_position_steps(1);
-    int32_t p2 = motion_get_position_steps(2);
-    int32_t p3 = motion_get_position_steps(3);
+    int32_t p0_steps = motion_get_position_steps(0);
+    int32_t p1_steps = motion_get_position_steps(1);
+    int32_t p2_steps = motion_get_position_steps(2);
+    int32_t p3_steps = motion_get_position_steps(3);
+
+    float p0_deg = config_steps_to_angle_deg(0, p0_steps);
+    float p1_deg = config_steps_to_angle_deg(1, p1_steps);
+    float p2_deg = config_steps_to_angle_deg(2, p2_steps);
+    float p3_deg = config_steps_to_angle_deg(3, p3_steps);
 
     bool moving = motion_is_any_moving();
 
     snprintf(buf, sizeof(buf),
-             "{\"state\":%d,\"faults\":%lu,\"pos_steps\":[%ld,%ld,%ld,%ld],\"moving\":%s}",
+             "{\"state\":%d,\"faults\":%lu,\"pos_deg\":[%.3f,%.3f,%.3f,%.3f],\"moving\":%s}",
              (int)st,
              (unsigned long)faults,
-             (long)p0, (long)p1, (long)p2, (long)p3,
+             (double)p0_deg, (double)p1_deg, (double)p2_deg, (double)p3_deg,
              moving ? "true" : "false");
 
     return send_json(req, buf);
@@ -420,6 +545,9 @@ static void http_server_start(void)
 {
     httpd_config_t cfg = HTTPD_DEFAULT_CONFIG();
     cfg.server_port = 80;
+    // We register many endpoints; default handler slots are not enough.
+    // Keep this above the number of registered URIs to avoid ESP_ERR_HTTPD_HANDLERS_FULL.
+    cfg.max_uri_handlers = 16;
 
     if (httpd_start(&s_http, &cfg) != ESP_OK) {
         ESP_LOGE(TAG, "Failed to start HTTP server");
@@ -427,12 +555,6 @@ static void http_server_start(void)
         return;
     }
 
-    httpd_uri_t uri_crawl = {
-        .uri      = "/crawl",
-        .method   = HTTP_GET,
-        .handler  = crawl_handler,
-        .user_ctx = NULL
-    };
     httpd_uri_t uri_rotate = {
         .uri      = "/rotate",
         .method   = HTTP_GET,
@@ -469,16 +591,50 @@ static void http_server_start(void)
         .handler  = uptime_handler,
         .user_ctx = NULL
     };
+    httpd_uri_t uri_home = {
+        .uri      = "/home",
+        .method   = HTTP_GET,
+        .handler  = home_handler,
+        .user_ctx = NULL
+    };
+    httpd_uri_t uri_setpos = {
+        .uri      = "/setpos",
+        .method   = HTTP_GET,
+        .handler  = setpos_handler,
+        .user_ctx = NULL
+    };
+    httpd_uri_t uri_jog_start = {
+        .uri      = "/jog_start",
+        .method   = HTTP_GET,
+        .handler  = jog_start_handler,
+        .user_ctx = NULL
+    };
+    httpd_uri_t uri_jog_stop = {
+        .uri      = "/jog_stop",
+        .method   = HTTP_GET,
+        .handler  = jog_stop_handler,
+        .user_ctx = NULL
+    };
+    httpd_uri_t uri_movej = {
+        .uri      = "/movej",
+        .method   = HTTP_GET,
+        .handler  = movej_handler,
+        .user_ctx = NULL
+    };
     
-    ESP_ERROR_CHECK(httpd_register_uri_handler(s_http, &uri_crawl));
     ESP_ERROR_CHECK(httpd_register_uri_handler(s_http, &uri_rotate));
     ESP_ERROR_CHECK(httpd_register_uri_handler(s_http, &uri_cmd));
     ESP_ERROR_CHECK(httpd_register_uri_handler(s_http, &uri_stop));
     ESP_ERROR_CHECK(httpd_register_uri_handler(s_http, &uri_estop));
     ESP_ERROR_CHECK(httpd_register_uri_handler(s_http, &uri_state));
     ESP_ERROR_CHECK(httpd_register_uri_handler(s_http, &uri_uptime));
+    ESP_ERROR_CHECK(httpd_register_uri_handler(s_http, &uri_home));
+    ESP_ERROR_CHECK(httpd_register_uri_handler(s_http, &uri_setpos));
+    ESP_ERROR_CHECK(httpd_register_uri_handler(s_http, &uri_jog_start));
+    ESP_ERROR_CHECK(httpd_register_uri_handler(s_http, &uri_jog_stop));
+    ESP_ERROR_CHECK(httpd_register_uri_handler(s_http, &uri_movej));
 
-    ESP_LOGI(TAG, "HTTP server started: /crawl /rotate /cmd /stop /estop /state /uptime");
+    ESP_LOGI(TAG, "HTTP server started: /rotate /cmd /home /setpos /jog_start /jog_stop /movej /stop /estop /state /uptime");
 }
 
 // -------------------- Public API --------------------

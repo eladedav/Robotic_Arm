@@ -86,8 +86,8 @@ const axis_config_t g_axis_cfg[CONFIG_AXES] = {
         .microsteps = 16,
         .gear_ratio = 1.0f,
 
-        .min_angle_deg = -180.0f,
-        .max_angle_deg =  180.0f,
+        .min_angle_deg = -160.0f,
+        .max_angle_deg =  160.0f,
 
         .max_speed_sps  = 30000.0f,
         .max_accel_sps2 = 20000.0f,
