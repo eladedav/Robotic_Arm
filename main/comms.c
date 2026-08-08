@@ -78,6 +78,12 @@ static void wifi_event_handler(void *arg,
             break;
 
         case WIFI_EVENT_STA_DISCONNECTED:
+            // On link loss, do a controlled motion stop but keep drivers enabled
+            // so joints can hold position under load.
+            motion_stop_all();
+            if (safety_get_state() != SYS_ESTOP) {
+                hal_gpio_enable_all();
+            }
             if (s_retry_num < WIFI_MAX_RETRY) {
                 s_retry_num++;
                 ESP_LOGW(TAG,

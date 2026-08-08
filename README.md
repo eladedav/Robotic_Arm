@@ -54,7 +54,17 @@ Exit monitor with `Ctrl-]`.
 ## Main Config Files
 
 - `main/board_pins.h`: STEP/DIR/EN GPIO mapping
-- `main/config.c`: mechanics (`full_steps_per_rev`, `microsteps`, `gear_ratio`) and limits
+- `main/config.c`: mechanics (`full_steps_per_rev`, `microsteps`, `gear_ratio`), direction inversion (`dir_inverted`), and limits
 - `main/comms.c`: HTTP endpoints
 - `main/motion.c`: motion planning and command handling
 - `main/pulse_gen.c`: hardware pulse generator
+
+## Invert Joint Direction
+
+If one motor rotates opposite to your expected `R/L` command, set that joint's `dir_inverted` in `main/config.c`:
+
+```c
+.dir_inverted = true,
+```
+
+This flips only the DIR pin logic for that axis and keeps all kinematics (`steps_per_deg`, limits, RPM conversion) unchanged.

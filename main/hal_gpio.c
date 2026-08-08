@@ -102,7 +102,11 @@ void hal_gpio_set_dir(uint8_t axis, bool dir)
         return;
     }
 
-    gpio_set_level(cfg->dir_pin, dir ? 1 : 0);
+    int level = dir ? 1 : 0;
+    if (cfg->dir_inverted) {
+        level = level ? 0 : 1;
+    }
+    gpio_set_level(cfg->dir_pin, level);
 }
 
 void hal_gpio_step_pulse(uint8_t axis)

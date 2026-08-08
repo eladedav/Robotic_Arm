@@ -15,6 +15,7 @@ const axis_config_t g_axis_cfg[CONFIG_AXES] = {
     {
         .step_pin = BOARD_AXIS0_STEP_GPIO,
         .dir_pin  = BOARD_AXIS0_DIR_GPIO,
+        .dir_inverted = false,
         .en_pin   = BOARD_AXIS0_EN_GPIO,
         .en_polarity = EN_ACTIVE_LOW,
 
@@ -37,6 +38,7 @@ const axis_config_t g_axis_cfg[CONFIG_AXES] = {
     {
         .step_pin = BOARD_AXIS1_STEP_GPIO,
         .dir_pin  = BOARD_AXIS1_DIR_GPIO,
+        .dir_inverted = true,
         .en_pin   = BOARD_AXIS1_EN_GPIO,
         .en_polarity = EN_ACTIVE_LOW,
 
@@ -58,12 +60,13 @@ const axis_config_t g_axis_cfg[CONFIG_AXES] = {
     {
         .step_pin = BOARD_AXIS2_STEP_GPIO,
         .dir_pin  = BOARD_AXIS2_DIR_GPIO,
+        .dir_inverted = false,
         .en_pin   = BOARD_AXIS2_EN_GPIO,
         .en_polarity = EN_ACTIVE_LOW,
 
         .full_steps_per_rev = 200,
         .microsteps = 16,
-        .gear_ratio = 1.0f,
+        .gear_ratio = 4.0f,
 
         .min_angle_deg = -180.0f,
         .max_angle_deg =  180.0f,
@@ -79,6 +82,7 @@ const axis_config_t g_axis_cfg[CONFIG_AXES] = {
     {
         .step_pin = BOARD_AXIS3_STEP_GPIO,
         .dir_pin  = BOARD_AXIS3_DIR_GPIO,
+        .dir_inverted = false,
         .en_pin   = BOARD_AXIS3_EN_GPIO,
         .en_polarity = EN_ACTIVE_LOW,
 

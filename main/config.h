@@ -29,6 +29,7 @@ typedef struct {
     // Hardware pins
     gpio_num_t step_pin;
     gpio_num_t dir_pin;
+    bool       dir_inverted;         // true: logical forward/reverse is inverted on DIR pin
     gpio_num_t en_pin;
     en_polarity_t en_polarity;
 

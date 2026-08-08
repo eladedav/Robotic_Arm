@@ -62,7 +62,13 @@ static void safety_task(void *arg)
 
             if (s_state == SYS_READY || s_state == SYS_MOVING) {
                 if (age_ms > SAFETY_COMM_TIMEOUT_MS) {
-                    set_fault(FAULT_COMM_TIMEOUT);
+                    // Communication timeout policy:
+                    // stop motion but keep motor drivers enabled so the arm keeps holding torque.
+                    motion_stop_all();
+                    s_state = SYS_READY;
+                    s_last_cmd_tick = now;
+                    ESP_LOGW(TAG, "Comm timeout (%lu ms): motion stopped, drivers remain enabled",
+                             (unsigned long)age_ms);
                 }
             }
         }
